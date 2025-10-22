@@ -492,5 +492,118 @@ namespace GeApmClient.Examples
                 Console.WriteLine($"Failed to load measurement: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// Example 16: Execute Genome Query with path and parameters
+        /// </summary>
+        public static async Task GenomeQueryExample()
+        {
+            // Initialize with timezone (important for MeridiumToken header)
+            using var client = new GeApmClient("https://apm.company.com", "America/New_York");
+            await client.LoginAsync("username", "password");
+
+            // Execute query with parameters
+            var parameters = new Dictionary<string, string>
+            {
+                { "startDate", "2025-01-01" },
+                { "endDate", "2025-01-31" },
+                { "status", "Active" }
+            };
+
+            var result = await client.ExecuteGenomeQueryAsync("reports/tml-summary", parameters);
+            Console.WriteLine("Query Result:");
+            Console.WriteLine(result);
+        }
+
+        /// <summary>
+        /// Example 17: Execute Genome Query with typed result
+        /// </summary>
+        public static async Task GenomeQueryTypedExample()
+        {
+            using var client = new GeApmClient("https://apm.company.com", "UTC");
+            await client.LoginAsync("username", "password");
+
+            // Execute query and deserialize to specific type
+            var result = await client.ExecuteGenomeQueryAsync<List<dynamic>>(
+                "queries/equipment-status",
+                new Dictionary<string, string>
+                {
+                    { "location", "Building A" }
+                });
+
+            if (result != null)
+            {
+                Console.WriteLine($"Found {result.Count} results");
+            }
+        }
+
+        /// <summary>
+        /// Example 18: Execute Genome Query by ID with parameter array
+        /// </summary>
+        public static async Task GenomeQueryByIdExample()
+        {
+            using var client = new GeApmClient("https://apm.company.com", "America/Chicago");
+            await client.LoginAsync("username", "password");
+
+            // Execute saved query by ID with positional parameters
+            var parameterValues = new[] { "TML-001", "2025-01-01", "2025-01-31" };
+            var result = await client.ExecuteGenomeQueryByIdAsync("Q12345", parameterValues);
+
+            Console.WriteLine("Query Result:");
+            Console.WriteLine(result);
+        }
+
+        /// <summary>
+        /// Example 19: Execute Genome Query with POST method
+        /// </summary>
+        public static async Task GenomeQueryPostExample()
+        {
+            using var client = new GeApmClient("https://apm.company.com", "UTC");
+            await client.LoginAsync("username", "password");
+
+            // Complex query with POST method
+            var queryRequest = new
+            {
+                QueryId = "ComplexTmlReport",
+                Parameters = new
+                {
+                    EquipmentIds = new[] { "VESSEL-001", "VESSEL-002", "VESSEL-003" },
+                    DateRange = new
+                    {
+                        Start = "2025-01-01T00:00:00Z",
+                        End = "2025-01-31T23:59:59Z"
+                    },
+                    IncludeMeasurements = true
+                },
+                Format = "json"
+            };
+
+            var result = await client.ExecuteGenomeQueryPostAsync("queries/complex-report", queryRequest);
+            Console.WriteLine("Complex Query Result:");
+            Console.WriteLine(result);
+        }
+
+        /// <summary>
+        /// Example 20: Initialize client with custom timezone
+        /// </summary>
+        public static async Task TimezoneExample()
+        {
+            // The timezone is critical for the MeridiumToken header format
+            // MeridiumToken header value: "{sessionid};{timezone}"
+
+            // Example with different timezones
+            var timezones = new[] { "UTC", "America/New_York", "America/Chicago", "Europe/London" };
+
+            foreach (var tz in timezones)
+            {
+                using var client = new GeApmClient("https://apm.company.com", tz);
+                await client.LoginAsync("username", "password");
+
+                Console.WriteLine($"Connected with timezone: {tz}");
+
+                // The MeridiumToken header is automatically set to: "{token};{tz}"
+                // All subsequent API calls will use this header
+            }
+        }
     }
 }

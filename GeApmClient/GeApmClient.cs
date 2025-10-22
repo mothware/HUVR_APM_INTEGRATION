@@ -15,16 +15,19 @@ namespace GeApmClient
         private readonly HttpClient _httpClient;
         private readonly string _baseUrl;
         private string? _authToken;
+        private string _timeZone = "UTC";
         private readonly SemaphoreSlim _authLock = new(1, 1);
 
         /// <summary>
         /// Initializes a new instance of the GeApmClient
         /// </summary>
         /// <param name="baseUrl">Base URL of the GE APM server (e.g., https://apm.company.com)</param>
+        /// <param name="timeZone">Time zone name for API calls (default: UTC)</param>
         /// <param name="httpClient">Optional HttpClient for custom configuration</param>
-        public GeApmClient(string baseUrl, HttpClient? httpClient = null)
+        public GeApmClient(string baseUrl, string? timeZone = null, HttpClient? httpClient = null)
         {
             _baseUrl = baseUrl?.TrimEnd('/') ?? throw new ArgumentNullException(nameof(baseUrl));
+            _timeZone = timeZone ?? "UTC";
             _httpClient = httpClient ?? new HttpClient();
             _httpClient.BaseAddress = new Uri(_baseUrl);
         }
@@ -64,8 +67,11 @@ namespace GeApmClient
             try
             {
                 _authToken = loginResponse.Token;
-                _httpClient.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", _authToken);
+
+                // Set MeridiumToken header with format: sessionid;Timezonename
+                var meridiumToken = $"{_authToken};{_timeZone}";
+                _httpClient.DefaultRequestHeaders.Remove("MeridiumToken");
+                _httpClient.DefaultRequestHeaders.Add("MeridiumToken", meridiumToken);
             }
             finally
             {
@@ -191,6 +197,114 @@ namespace GeApmClient
 
             var countString = await response.Content.ReadAsStringAsync(cancellationToken);
             return int.Parse(countString);
+        }
+
+        #endregion
+
+        #region Genome Query API
+
+        /// <summary>
+        /// Executes a Genome Query (GE APM's proprietary query language)
+        /// </summary>
+        /// <param name="queryPath">Query path or query ID</param>
+        /// <param name="parameters">Query parameters as key-value pairs</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Query result as dynamic JSON</returns>
+        public async Task<string> ExecuteGenomeQueryAsync(
+            string queryPath,
+            Dictionary<string, string>? parameters = null,
+            CancellationToken cancellationToken = default)
+        {
+            EnsureAuthenticated();
+
+            var url = $"/meridium/api/query/{queryPath.TrimStart('/')}";
+
+            if (parameters != null && parameters.Count > 0)
+            {
+                var queryString = string.Join("&",
+                    parameters.Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value)}"));
+                url += $"?{queryString}";
+            }
+
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadAsStringAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Executes a Genome Query with typed result
+        /// </summary>
+        /// <typeparam name="T">Type to deserialize the result to</typeparam>
+        /// <param name="queryPath">Query path or query ID</param>
+        /// <param name="parameters">Query parameters as key-value pairs</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Typed query result</returns>
+        public async Task<T?> ExecuteGenomeQueryAsync<T>(
+            string queryPath,
+            Dictionary<string, string>? parameters = null,
+            CancellationToken cancellationToken = default)
+        {
+            var json = await ExecuteGenomeQueryAsync(queryPath, parameters, cancellationToken);
+            return JsonSerializer.Deserialize<T>(json);
+        }
+
+        /// <summary>
+        /// Executes a Genome Query by query ID with parameters
+        /// </summary>
+        /// <param name="queryId">Query ID from GE APM catalog</param>
+        /// <param name="parameterValues">Array of parameter values for the query</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Query result as JSON string</returns>
+        public async Task<string> ExecuteGenomeQueryByIdAsync(
+            string queryId,
+            string[]? parameterValues = null,
+            CancellationToken cancellationToken = default)
+        {
+            EnsureAuthenticated();
+
+            var url = $"/meridium/api/query/{queryId}";
+
+            // Build parameter string if provided
+            if (parameterValues != null && parameterValues.Length > 0)
+            {
+                var paramDict = new Dictionary<string, string>();
+                for (int i = 0; i < parameterValues.Length; i++)
+                {
+                    paramDict[$"param{i + 1}"] = parameterValues[i];
+                }
+
+                var queryString = string.Join("&",
+                    paramDict.Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value)}"));
+                url += $"?{queryString}";
+            }
+
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadAsStringAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Executes a POST-based Genome Query with complex parameters
+        /// </summary>
+        /// <param name="queryPath">Query path or query ID</param>
+        /// <param name="queryRequest">Query request object with parameters</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Query result as JSON string</returns>
+        public async Task<string> ExecuteGenomeQueryPostAsync(
+            string queryPath,
+            object queryRequest,
+            CancellationToken cancellationToken = default)
+        {
+            EnsureAuthenticated();
+
+            var url = $"/meridium/api/query/{queryPath.TrimStart('/')}";
+
+            var response = await _httpClient.PostAsJsonAsync(url, queryRequest, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadAsStringAsync(cancellationToken);
         }
 
         #endregion

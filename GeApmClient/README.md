@@ -5,8 +5,11 @@ A comprehensive C# client library for GE APM On-Premises API. This library provi
 ## Features
 
 - **Simple Authentication**: Login with username/password to obtain Meridium token
+- **MeridiumToken Header**: Automatic authentication with format "sessionid;Timezonename"
+- **Timezone Support**: Configure timezone for all API calls
 - **TML Operations**: Complete CRUD operations for Thickness Measurement Locations and measurements
-- **Generic Query API**: Flexible querying with path and parameter arrays
+- **Genome Query API**: Execute GE APM proprietary queries with parameters
+- **Generic Query API**: Flexible OData querying with path and parameter arrays
 - **OData Support**: Full OData query options ($filter, $select, $expand, $orderby, etc.)
 - **Batch Operations**: Load multiple TML measurements efficiently
 - **Type-Safe Models**: Strongly-typed C# models for all entities
@@ -36,17 +39,20 @@ GeApmClient/
 
 ## Quick Start
 
-### 1. Login
+### 1. Login with Timezone
 
 ```csharp
 using GeApmClient;
 
-using var client = new GeApmClient("https://apm.company.com");
+// Initialize with timezone (default: UTC)
+using var client = new GeApmClient("https://apm.company.com", "America/New_York");
 
-// Authenticate
+// Authenticate - MeridiumToken header is automatically set to: "{sessionid};America/New_York"
 var loginResponse = await client.LoginAsync("username", "password");
 Console.WriteLine($"Logged in as {loginResponse.UserName}");
 ```
+
+**Important**: The timezone parameter is required for proper MeridiumToken header format. The client automatically sets the `MeridiumToken` header to `{sessionid};{timezone}` for all authenticated requests.
 
 ### 2. Query TMLs
 
@@ -83,7 +89,23 @@ var result = await client.LoadTmlMeasurementAsync(measurement);
 Console.WriteLine($"Measurement created: {result.EntityKey}");
 ```
 
-### 4. Generic Query with Path and Parameters
+### 4. Genome Query API
+
+```csharp
+// Execute Genome Query (GE APM proprietary query language)
+var parameters = new Dictionary<string, string>
+{
+    { "startDate", "2025-01-01" },
+    { "endDate", "2025-01-31" },
+    { "status", "Active" }
+};
+
+var result = await client.ExecuteGenomeQueryAsync("reports/tml-summary", parameters);
+Console.WriteLine("Query Result:");
+Console.WriteLine(result);
+```
+
+### 5. Generic Query with Path and Parameters
 
 ```csharp
 // Query any family with custom parameters
@@ -368,6 +390,118 @@ var active = await client.GetCountAsync(
     "Status eq 'Active'");
 
 Console.WriteLine($"Active TMLs: {active} of {total}");
+```
+
+---
+
+### Genome Query API
+
+The Genome Query API allows execution of GE APM's proprietary query language for custom reports and data extraction.
+
+#### ExecuteGenomeQueryAsync
+
+Executes a Genome Query with path and parameters, returns raw JSON.
+
+```csharp
+public async Task<string> ExecuteGenomeQueryAsync(
+    string queryPath,
+    Dictionary<string, string>? parameters = null,
+    CancellationToken cancellationToken = default)
+```
+
+**Parameters**:
+- `queryPath`: Query path or query identifier (e.g., "reports/tml-summary", "queries/equipment-status")
+- `parameters`: Dictionary of query parameters as key-value pairs
+
+**Example**:
+```csharp
+var parameters = new Dictionary<string, string>
+{
+    { "startDate", "2025-01-01" },
+    { "endDate", "2025-01-31" },
+    { "equipmentId", "VESSEL-001" }
+};
+
+var result = await client.ExecuteGenomeQueryAsync("reports/inspection-summary", parameters);
+Console.WriteLine(result);
+```
+
+#### ExecuteGenomeQueryAsync&lt;T&gt;
+
+Executes a Genome Query with typed result deserialization.
+
+```csharp
+public async Task<T?> ExecuteGenomeQueryAsync<T>(
+    string queryPath,
+    Dictionary<string, string>? parameters = null,
+    CancellationToken cancellationToken = default)
+```
+
+**Example**:
+```csharp
+var result = await client.ExecuteGenomeQueryAsync<List<TmlSummary>>(
+    "queries/tml-summary",
+    new Dictionary<string, string>
+    {
+        { "location", "Building A" }
+    });
+
+foreach (var item in result)
+{
+    Console.WriteLine($"{item.TmlId}: {item.Status}");
+}
+```
+
+#### ExecuteGenomeQueryByIdAsync
+
+Executes a saved query by ID with parameter array.
+
+```csharp
+public async Task<string> ExecuteGenomeQueryByIdAsync(
+    string queryId,
+    string[]? parameterValues = null,
+    CancellationToken cancellationToken = default)
+```
+
+**Parameters**:
+- `queryId`: Query ID from GE APM catalog (e.g., "Q12345")
+- `parameterValues`: Array of parameter values (positional parameters)
+
+**Example**:
+```csharp
+// Execute query Q12345 with 3 parameters
+var parameterValues = new[] { "TML-001", "2025-01-01", "2025-01-31" };
+var result = await client.ExecuteGenomeQueryByIdAsync("Q12345", parameterValues);
+```
+
+#### ExecuteGenomeQueryPostAsync
+
+Executes a POST-based Genome Query with complex parameters.
+
+```csharp
+public async Task<string> ExecuteGenomeQueryPostAsync(
+    string queryPath,
+    object queryRequest,
+    CancellationToken cancellationToken = default)
+```
+
+**Example**:
+```csharp
+var queryRequest = new
+{
+    QueryId = "ComplexReport",
+    Parameters = new
+    {
+        EquipmentIds = new[] { "VESSEL-001", "VESSEL-002" },
+        DateRange = new
+        {
+            Start = "2025-01-01T00:00:00Z",
+            End = "2025-01-31T23:59:59Z"
+        }
+    }
+};
+
+var result = await client.ExecuteGenomeQueryPostAsync("queries/complex", queryRequest);
 ```
 
 ---
