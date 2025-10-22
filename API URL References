@@ -2,5 +2,19 @@
 https://www.gevernova.com/software/documentation/onpremises-apm/v53/help/custdev-overview.html
 https://www.gevernova.com/software/documentation/onpremises-apm/v53/help/simple-ingestion-overview-v2.html
 
+GEAPM QUERY API
+URL - https://{{Server}}/Meridium/api/ext/v2/catalog/query/path/execute
+Payload - 
+{
+    "QueryPath":"Public\\EastmanData\\HUVR Piping Systems and PLN associated with Major Equipment",
+    "Page":0,
+    "PageSize":60000,
+    "InputSingleParams":
+    {
+        "PHAPID":"TEDP1010",
+        "Building":"Eastman Chemical Company - Kingsport TN"
+    } 
+}
+
 #HUVR App API Refrences
 https://docs.huvrdata.app/reference
