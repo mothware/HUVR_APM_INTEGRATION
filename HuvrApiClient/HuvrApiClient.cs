@@ -648,6 +648,192 @@ namespace HuvrApiClient
 
         #endregion
 
+        #region Pagination Helper Methods
+
+        /// <summary>
+        /// Gets all assets by automatically handling pagination
+        /// </summary>
+        /// <param name="queryParams">Optional query parameters for filtering</param>
+        /// <param name="maxResults">Maximum number of results to retrieve (default: unlimited)</param>
+        public async Task<List<Asset>> GetAllAssetsAsync(
+            Dictionary<string, string>? queryParams = null,
+            int? maxResults = null,
+            CancellationToken cancellationToken = default)
+        {
+            var allAssets = new List<Asset>();
+            var url = "/api/assets/";
+
+            while (url != null && (!maxResults.HasValue || allAssets.Count < maxResults.Value))
+            {
+                var response = await GetPagedResultAsync<AssetListResponse>(url, queryParams, cancellationToken);
+                allAssets.AddRange(response.Results);
+
+                if (maxResults.HasValue && allAssets.Count >= maxResults.Value)
+                {
+                    allAssets = allAssets.Take(maxResults.Value).ToList();
+                    break;
+                }
+
+                url = response.Next;
+                queryParams = null; // Query params only used for first request
+            }
+
+            return allAssets;
+        }
+
+        /// <summary>
+        /// Gets all projects by automatically handling pagination
+        /// </summary>
+        /// <param name="queryParams">Optional query parameters for filtering</param>
+        /// <param name="maxResults">Maximum number of results to retrieve (default: unlimited)</param>
+        public async Task<List<Project>> GetAllProjectsAsync(
+            Dictionary<string, string>? queryParams = null,
+            int? maxResults = null,
+            CancellationToken cancellationToken = default)
+        {
+            var allProjects = new List<Project>();
+            var url = "/api/projects/";
+
+            while (url != null && (!maxResults.HasValue || allProjects.Count < maxResults.Value))
+            {
+                var response = await GetPagedResultAsync<ProjectListResponse>(url, queryParams, cancellationToken);
+                allProjects.AddRange(response.Results);
+
+                if (maxResults.HasValue && allProjects.Count >= maxResults.Value)
+                {
+                    allProjects = allProjects.Take(maxResults.Value).ToList();
+                    break;
+                }
+
+                url = response.Next;
+                queryParams = null;
+            }
+
+            return allProjects;
+        }
+
+        /// <summary>
+        /// Gets all inspection media by automatically handling pagination
+        /// </summary>
+        /// <param name="queryParams">Optional query parameters for filtering</param>
+        /// <param name="maxResults">Maximum number of results to retrieve (default: unlimited)</param>
+        public async Task<List<InspectionMedia>> GetAllInspectionMediaAsync(
+            Dictionary<string, string>? queryParams = null,
+            int? maxResults = null,
+            CancellationToken cancellationToken = default)
+        {
+            var allMedia = new List<InspectionMedia>();
+            var url = "/api/inspection-media/";
+
+            while (url != null && (!maxResults.HasValue || allMedia.Count < maxResults.Value))
+            {
+                var response = await GetPagedResultAsync<InspectionMediaListResponse>(url, queryParams, cancellationToken);
+                allMedia.AddRange(response.Results);
+
+                if (maxResults.HasValue && allMedia.Count >= maxResults.Value)
+                {
+                    allMedia = allMedia.Take(maxResults.Value).ToList();
+                    break;
+                }
+
+                url = response.Next;
+                queryParams = null;
+            }
+
+            return allMedia;
+        }
+
+        /// <summary>
+        /// Gets all defects by automatically handling pagination
+        /// </summary>
+        /// <param name="queryParams">Optional query parameters for filtering</param>
+        /// <param name="maxResults">Maximum number of results to retrieve (default: unlimited)</param>
+        public async Task<List<Defect>> GetAllDefectsAsync(
+            Dictionary<string, string>? queryParams = null,
+            int? maxResults = null,
+            CancellationToken cancellationToken = default)
+        {
+            var allDefects = new List<Defect>();
+            var url = "/api/defects/";
+
+            while (url != null && (!maxResults.HasValue || allDefects.Count < maxResults.Value))
+            {
+                var response = await GetPagedResultAsync<DefectListResponse>(url, queryParams, cancellationToken);
+                allDefects.AddRange(response.Results);
+
+                if (maxResults.HasValue && allDefects.Count >= maxResults.Value)
+                {
+                    allDefects = allDefects.Take(maxResults.Value).ToList();
+                    break;
+                }
+
+                url = response.Next;
+                queryParams = null;
+            }
+
+            return allDefects;
+        }
+
+        /// <summary>
+        /// Gets all measurements by automatically handling pagination
+        /// </summary>
+        /// <param name="queryParams">Optional query parameters for filtering</param>
+        /// <param name="maxResults">Maximum number of results to retrieve (default: unlimited)</param>
+        public async Task<List<Measurement>> GetAllMeasurementsAsync(
+            Dictionary<string, string>? queryParams = null,
+            int? maxResults = null,
+            CancellationToken cancellationToken = default)
+        {
+            var allMeasurements = new List<Measurement>();
+            var url = "/api/measurements/";
+
+            while (url != null && (!maxResults.HasValue || allMeasurements.Count < maxResults.Value))
+            {
+                var response = await GetPagedResultAsync<MeasurementListResponse>(url, queryParams, cancellationToken);
+                allMeasurements.AddRange(response.Results);
+
+                if (maxResults.HasValue && allMeasurements.Count >= maxResults.Value)
+                {
+                    allMeasurements = allMeasurements.Take(maxResults.Value).ToList();
+                    break;
+                }
+
+                url = response.Next;
+                queryParams = null;
+            }
+
+            return allMeasurements;
+        }
+
+        /// <summary>
+        /// Generic helper method to get paged results
+        /// </summary>
+        private async Task<T> GetPagedResultAsync<T>(
+            string url,
+            Dictionary<string, string>? queryParams,
+            CancellationToken cancellationToken)
+        {
+            await EnsureAuthenticatedAsync(cancellationToken);
+
+            // If URL is a full URL (from Next link), use it directly
+            if (url.StartsWith("http"))
+            {
+                var response = await _httpClient.GetAsync(url, cancellationToken);
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadFromJsonAsync<T>(cancellationToken)
+                    ?? throw new InvalidOperationException("Failed to deserialize response");
+            }
+
+            // Otherwise build URL with query params
+            var fullUrl = BuildUrl(url, queryParams);
+            var result = await _httpClient.GetAsync(fullUrl, cancellationToken);
+            result.EnsureSuccessStatusCode();
+            return await result.Content.ReadFromJsonAsync<T>(cancellationToken)
+                ?? throw new InvalidOperationException("Failed to deserialize response");
+        }
+
+        #endregion
+
         #region Helper Methods
 
         /// <summary>

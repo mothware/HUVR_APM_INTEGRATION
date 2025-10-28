@@ -11,6 +11,9 @@ A comprehensive C# client library for interacting with the HUVR Data API v3. Thi
 - **Easy Media Upload**: Simplified two-part media upload workflow
 - **PATCH Support**: Partial updates for all resources
 - **Query Parameters**: Flexible filtering and searching
+- **Pagination Helpers**: Automatic pagination handling with `GetAll*Async()` methods
+- **Data Gathering Utilities**: Built-in tools for collecting and exporting complete project data
+- **Error Handling**: Custom exception types with detailed error information
 
 ## Installation
 
@@ -29,7 +32,9 @@ HuvrApiClient/
 │   ├── Defect.cs
 │   ├── Measurement.cs
 │   ├── User.cs
-│   └── Workspace.cs
+│   ├── Workspace.cs
+│   └── ErrorModels.cs
+├── HuvrDataGatherer.cs
 └── Examples/
     └── UsageExamples.cs
 ```
@@ -436,6 +441,95 @@ await client.UpdateAssetAsync(
 );
 ```
 
+## Pagination Helpers
+
+The client includes automatic pagination helpers for retrieving all results:
+
+```csharp
+// Get ALL assets (automatically handles pagination)
+var allAssets = await client.GetAllAssetsAsync();
+
+// Get all assets with filtering
+var activeAssets = await client.GetAllAssetsAsync(new Dictionary<string, string>
+{
+    { "status", "Active" }
+});
+
+// Limit total results
+var first100Assets = await client.GetAllAssetsAsync(maxResults: 100);
+
+// Available for: Assets, Projects, Media, Defects, Measurements
+var allProjects = await client.GetAllProjectsAsync();
+var allMedia = await client.GetAllInspectionMediaAsync();
+var allDefects = await client.GetAllDefectsAsync();
+var allMeasurements = await client.GetAllMeasurementsAsync();
+```
+
+## Data Gathering Utilities
+
+Use `HuvrDataGatherer` for advanced data collection and export:
+
+### Gather Complete Project Data
+```csharp
+var gatherer = new HuvrDataGatherer(client);
+
+// Get all related data for a project
+var projectData = await gatherer.GatherProjectDataAsync("project-id");
+
+Console.WriteLine($"Project: {projectData.Project.Name}");
+Console.WriteLine($"Asset: {projectData.Asset?.Name}");
+Console.WriteLine($"Media: {projectData.Media.Count}");
+Console.WriteLine($"Defects: {projectData.Defects.Count}");
+Console.WriteLine($"Measurements: {projectData.Measurements.Count}");
+```
+
+### Gather Asset Data
+```csharp
+// Get asset with all its projects and related data
+var assetData = await gatherer.GatherAssetDataAsync("asset-id");
+
+foreach (var project in assetData.ProjectSnapshots)
+{
+    Console.WriteLine($"{project.Project.Name}: " +
+                     $"{project.Defects.Count} defects, " +
+                     $"{project.Media.Count} media files");
+}
+```
+
+### Download Project Media
+```csharp
+// Download all media files for a project
+var files = await gatherer.DownloadProjectMediaAsync(
+    "project-id",
+    "./downloads/project-media"
+);
+Console.WriteLine($"Downloaded {files.Count} files");
+```
+
+### Get Defects Summary
+```csharp
+// Get defects with statistics
+var summary = await gatherer.GetDefectsSummaryAsync(new Dictionary<string, string>
+{
+    { "status", "Open" }
+});
+
+Console.WriteLine($"Total: {summary.TotalDefects}");
+Console.WriteLine($"Critical: {summary.BySeverity.GetValueOrDefault("Critical", 0)}");
+Console.WriteLine($"High: {summary.BySeverity.GetValueOrDefault("High", 0)}");
+```
+
+### Batch Data Collection
+```csharp
+// Gather data for multiple projects in parallel
+var projectIds = new List<string> { "prj_1", "prj_2", "prj_3" };
+var projectsData = await gatherer.GatherMultipleProjectsDataAsync(
+    projectIds,
+    includeAsset: true,
+    maxConcurrency: 5
+);
+```
+
 ## Configuration
 
 ### Custom HTTP Client
@@ -451,9 +545,10 @@ var client = new HuvrApiClient("client-id", "client-secret", httpClient);
 ## API Documentation
 
 For complete API documentation, see:
+- **API Endpoints Reference with Sample Responses**: `HUVR_API_ENDPOINTS_REFERENCE.md` in this repository
+- **HUVR API Definition**: `HUVR_API_DEFINITION.md` in this repository
 - **API Reference**: https://docs.huvrdata.app/reference
 - **OpenAPI Spec**: https://docs.huvrdata.app/openapi/
-- **HUVR API Definition**: See `HUVR_API_DEFINITION.md` in this repository
 
 ## Support
 
