@@ -1,0 +1,296 @@
+@{
+    ViewData["Title"] = "Excel Field Mapping";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">Excel Field Mapping & Export</h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>Instructions:</strong> Select an entity type, map API fields to Excel columns, and export to Excel.
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Entity Type</label>
+                        <select id="entityType" class="form-select form-select-lg">
+                            <option value="">-- Select Entity Type --</option>
+                            <option value="assets">Assets</option>
+                            <option value="projects">Projects (Work Orders)</option>
+                            <option value="defects">Defects (Findings)</option>
+                            <option value="measurements">Measurements</option>
+                            <option value="inspectionmedia">Inspection Media</option>
+                            <option value="checklists">Checklists (Digital Forms)</option>
+                            <option value="users">Users</option>
+                            <option value="workspaces">Workspaces</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <button id="loadFieldsBtn" class="btn btn-primary btn-lg w-100">
+                            Load Available Fields
+                        </button>
+                    </div>
+                </div>
+
+                <div id="mappingSection" style="display:none;">
+                    <hr>
+                    <h5 class="mb-3">Field Mappings</h5>
+                    <p class="text-muted">Map API fields to Excel column names. Leave Excel column blank to use the API field name.</p>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="50">
+                                        <input type="checkbox" id="selectAll" checked>
+                                    </th>
+                                    <th>API Field</th>
+                                    <th>Excel Column Name</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mappingTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4">
+                        <button id="exportBtn" class="btn btn-success btn-lg px-5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-file-earmark-excel me-2" viewBox="0 0 16 16">
+                                <path d="M5.884 6.68a.5.5 0 1 0-.768.64L7.349 10l-2.233 2.68a.5.5 0 0 0 .768.64L8 10.781l2.116 2.54a.5.5 0 0 0 .768-.641L8.651 10l2.233-2.68a.5.5 0 0 0-.768-.64L8 9.219l-2.116-2.54z"/>
+                                <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+                            </svg>
+                            Export to Excel
+                        </button>
+                        <button id="resetBtn" class="btn btn-secondary btn-lg px-5 ms-2">
+                            Reset Mappings
+                        </button>
+                    </div>
+                </div>
+
+                <div id="loading" class="alert alert-warning mt-4" style="display:none;">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    <span id="loadingText">Processing...</span>
+                </div>
+
+                <div id="error" class="alert alert-danger mt-4" style="display:none;"></div>
+                <div id="success" class="alert alert-success mt-4" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Field Mapping Examples</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold">Example Mappings:</h6>
+                        <ul>
+                            <li><code>Id</code> → "Asset ID"</li>
+                            <li><code>Name</code> → "Asset Name"</li>
+                            <li><code>CreatedAt</code> → "Created Date"</li>
+                            <li><code>Status</code> → "Current Status"</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold">Tips:</h6>
+                        <ul>
+                            <li>Leave Excel column blank to use API field name</li>
+                            <li>Uncheck fields you don't want to include</li>
+                            <li>Use "Select All" to quickly toggle all fields</li>
+                            <li>Click "Reset" to restore default mappings</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var availableFields = [];
+        var currentEntityType = '';
+
+        $(document).ready(function() {
+            $('#loadFieldsBtn').click(function() {
+                var entityType = $('#entityType').val();
+                if (!entityType) {
+                    alert('Please select an entity type');
+                    return;
+                }
+
+                currentEntityType = entityType;
+                loadFields(entityType);
+            });
+
+            $('#selectAll').change(function() {
+                $('.field-checkbox').prop('checked', $(this).prop('checked'));
+            });
+
+            $('#exportBtn').click(function() {
+                exportToExcel();
+            });
+
+            $('#resetBtn').click(function() {
+                if (currentEntityType) {
+                    loadFields(currentEntityType);
+                }
+            });
+        });
+
+        function loadFields(entityType) {
+            $('#loading').show();
+            $('#loadingText').text('Loading fields...');
+            $('#error').hide();
+            $('#success').hide();
+
+            $.ajax({
+                url: '@Url.Action("GetAvailableFields", "Excel")',
+                type: 'GET',
+                data: { entityType: entityType },
+                success: function(response) {
+                    $('#loading').hide();
+
+                    if (response.success) {
+                        availableFields = response.fields;
+                        renderFieldMappings(response.fields);
+                        $('#mappingSection').show();
+                    } else {
+                        $('#error').text('Error: ' + response.error).show();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#loading').hide();
+                    $('#error').text('Request failed: ' + error).show();
+                }
+            });
+        }
+
+        function renderFieldMappings(fields) {
+            var tbody = $('#mappingTableBody');
+            tbody.empty();
+
+            fields.forEach(function(field) {
+                var row = $('<tr>');
+
+                var checkboxCell = $('<td class="text-center">').append(
+                    $('<input type="checkbox" class="field-checkbox form-check-input">').prop('checked', true).data('field', field)
+                );
+
+                var fieldCell = $('<td>').html('<code>' + field + '</code>');
+
+                var excelColumnCell = $('<td>').append(
+                    $('<input type="text" class="form-control excel-column">')
+                        .attr('placeholder', field)
+                        .data('field', field)
+                        .val(formatFieldName(field))
+                );
+
+                row.append(checkboxCell, fieldCell, excelColumnCell);
+                tbody.append(row);
+            });
+        }
+
+        function formatFieldName(field) {
+            // Convert camelCase to Title Case
+            return field
+                .replace(/([A-Z])/g, ' $1')
+                .replace(/^./, function(str) { return str.toUpperCase(); })
+                .trim();
+        }
+
+        function exportToExcel() {
+            var mappings = [];
+
+            $('.field-checkbox').each(function() {
+                var checkbox = $(this);
+                var field = checkbox.data('field');
+                var excelColumn = $('.excel-column[data-field="' + field + '"]').val() || field;
+                var isSelected = checkbox.prop('checked');
+
+                mappings.push({
+                    ApiField: field,
+                    ExcelColumn: excelColumn,
+                    IsSelected: isSelected
+                });
+            });
+
+            if (!mappings.some(m => m.IsSelected)) {
+                alert('Please select at least one field to export');
+                return;
+            }
+
+            $('#loading').show();
+            $('#loadingText').text('Fetching data and generating Excel file...');
+            $('#error').hide();
+            $('#success').hide();
+
+            $.ajax({
+                url: '@Url.Action("ExportToExcel", "Excel")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    EntityType: currentEntityType,
+                    Mappings: mappings
+                }),
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function(blob, status, xhr) {
+                    $('#loading').hide();
+
+                    // Check if response is JSON (error) or blob (file)
+                    if (blob.type === 'application/json') {
+                        // It's an error response
+                        var reader = new FileReader();
+                        reader.onload = function() {
+                            var response = JSON.parse(reader.result);
+                            $('#error').text('Error: ' + response.error).show();
+                        };
+                        reader.readAsText(blob);
+                    } else {
+                        // It's a file, trigger download
+                        var filename = xhr.getResponseHeader('Content-Disposition');
+                        if (filename) {
+                            filename = filename.split('filename=')[1].replace(/"/g, '');
+                        } else {
+                            filename = currentEntityType + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
+                        }
+
+                        var url = window.URL.createObjectURL(blob);
+                        var a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+
+                        $('#success').text('Excel file downloaded successfully!').show();
+
+                        setTimeout(function() {
+                            $('#success').fadeOut();
+                        }, 5000);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#loading').hide();
+
+                    if (xhr.responseJSON) {
+                        $('#error').text('Error: ' + xhr.responseJSON.error).show();
+                    } else {
+                        $('#error').text('Export failed: ' + error).show();
+                    }
+                }
+            });
+        }
+    </script>
+}

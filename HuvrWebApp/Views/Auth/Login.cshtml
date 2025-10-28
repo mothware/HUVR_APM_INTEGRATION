@@ -1,0 +1,56 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">HUVR API Login</h3>
+            </div>
+            <div class="card-body p-4">
+                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        @Model.ErrorMessage
+                    </div>
+                }
+
+                <form asp-action="Login" method="post">
+                    <div class="mb-3">
+                        <label asp-for="ClientId" class="form-label"></label>
+                        <input asp-for="ClientId" class="form-control" placeholder="[email protected]" />
+                        <span asp-validation-for="ClientId" class="text-danger"></span>
+                        <small class="form-text text-muted">Enter your HUVR service account email</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ClientSecret" class="form-label"></label>
+                        <input asp-for="ClientSecret" class="form-control" type="password" />
+                        <span asp-validation-for="ClientSecret" class="text-danger"></span>
+                        <small class="form-text text-muted">Enter your HUVR service account secret</small>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">Login</button>
+                    </div>
+                </form>
+
+                <div class="mt-4 p-3 bg-light rounded">
+                    <h6 class="fw-bold">Getting Started:</h6>
+                    <ol class="small mb-0">
+                        <li>Enter your HUVR service account credentials</li>
+                        <li>The app will obtain an access token</li>
+                        <li>Use the dashboard to call API methods</li>
+                        <li>Export data to Excel with custom field mappings</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
