@@ -32,6 +32,25 @@ namespace HuvrApiClient
             _httpClient.BaseAddress = new Uri(BaseUrl);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the HuvrApiClient using a configuration object
+        /// </summary>
+        /// <param name="config">Configuration object containing client credentials and settings</param>
+        /// <param name="httpClient">Optional HttpClient for custom configuration</param>
+        public HuvrApiClient(HuvrApiClientConfig config, HttpClient? httpClient = null)
+        {
+            if (config == null)
+                throw new ArgumentNullException(nameof(config));
+
+            config.Validate();
+
+            _clientId = config.ClientId;
+            _clientSecret = config.ClientSecret;
+            _httpClient = httpClient ?? new HttpClient();
+            _httpClient.BaseAddress = new Uri(config.BaseUrl);
+            _httpClient.Timeout = TimeSpan.FromSeconds(config.TimeoutSeconds);
+        }
+
         #region Authentication
 
         /// <summary>
@@ -61,7 +80,7 @@ namespace HuvrApiClient
         /// <summary>
         /// Ensures a valid access token is available, refreshing if necessary
         /// </summary>
-        private async Task EnsureAuthenticatedAsync(CancellationToken cancellationToken = default)
+        public async Task EnsureAuthenticatedAsync(CancellationToken cancellationToken = default)
         {
             await _tokenLock.WaitAsync(cancellationToken);
             try
