@@ -1,0 +1,158 @@
+{            "id": 1261,
+            "asset": {
+                "id": 2989,
+                "name": "003",
+                "asset_path": "Kingsport/Loading Platforms/003",
+                "asset_path_object": [
+                    {
+                        "id": 1,
+                        "name": "Kingsport"
+                    },
+                    {
+                        "id": 2627,
+                        "name": "Loading Platforms"
+                    },
+                    {
+                        "id": 2989,
+                        "name": "003"
+                    }
+                ],
+                "owner": {
+                    "id": 1,
+                    "name": "Eastman Chemical",
+                    "parent": null,
+                    "created_on": "2024-02-15T19:19:31.767767Z",
+                    "updated_on": "2024-02-15T19:19:31.768106Z",
+                    "role": "OWNER",
+                    "description": null,
+                    "is_active": true,
+                    "labels": [],
+                    "company_path": "Eastman Chemical",
+                    "company_path_object": [
+                        {
+                            "id": 1,
+                            "name": "Eastman Chemical"
+                        }
+                    ]
+                },
+                "parent": 2627,
+                "type": {
+                    "id": 8,
+                    "name": "Building",
+                    "is_active": true,
+                    "track_asset_condition": false,
+                    "cml_mode": "DISABLED",
+                    "findings_mode": "ENABLED"
+                },
+                "labels": [],
+                "app_key": null,
+                "external_id": null
+            },
+            "overlays": [
+                {
+                    "id": 1349,
+                    "defect": 1261,
+                    "media": {
+                        "id": 1995,
+                        "name": "33DBB285-0ECD-4DDB-ADF1-817142F3AB70.jpg",
+                        "description": "",
+                        "state": "UPLOADED",
+                        "thumbnail": "https://storage.googleapis.com/huvrdata-staging-eastman/generated/inspection-media/1995/thumbnail.jpeg?Expires=1761865014&GoogleAccessId=68751758203-compute%40developer.gserviceaccount.com&Signature=LIVOuridSattsFrT1xXbhw4pVSYYD%2BiUZktYgxtMtMNhPezR%2FibpoTpXmqQKRhW4lw8cZCLpq87SCXKUhF3jjNI41lEzcZbcIfcydJRYgPYVn3JCoDYA9opYE1S9CNawHpoXALUEWPVjM1vPiGbHkuNqOYLHwkdnnTgwjmSgOqKhom8MLztasVyZ9ol1%2BHtG%2BSkgoVZIxVuXfL1kRcjPvuusQix3UzT2L%2FcPW1qJ3STkGTuFaBcPxyXJyk3ZS%2FwOmPyn79WDZdG9J2YonSPTGAekCirLYJevD0Fwp%2FQmIZUo6TyzIV71w6O44%2FIZZWb%2F0%2FOdOPKuRNMv9cfPvs%2FjVQ%3D%3D",
+                        "preview": "https://storage.googleapis.com/huvrdata-staging-eastman/generated/inspection-media/1995/preview.jpeg?Expires=1761865014&GoogleAccessId=68751758203-compute%40developer.gserviceaccount.com&Signature=SL2DMx0lH%2F39nKlxonaMKOI0VYT37KVK5N27JoEsugUICW9Wn7ErJlDJKEzBHDiiSqQgGpGPCVT8c7fuFrL40bHwEcJZs0DJL6r3w9rjX%2BzKmTgxViKFXtAKmXX7mrZ3NsBRuJ9lppU6vmUVJVXpc3iz2oczvNqCbcU1y9TtQhlU9nuGBfzyjBQuUBSGroXGkESCDFSapAbpLs7OXhbOaHD8HYqejrOcBM9TPTNGdBpUk1x%2BgI4Fy3OHpO3Bgzyum%2FTYlHdrQSWbXeTPNvjnO8maRmOzYdm5jDAySa5uH4y4V4SycAud1lPa0qiheiUi6FJbs7org24ybZbM8pm30A%3D%3D",
+                        "file": "https://storage.googleapis.com/huvrdata-staging-eastman/inspection-media/project-3345/33DBB285-0ECD-4DDB-ADF1-817142F3AB70.jpg?Expires=1761865014&GoogleAccessId=68751758203-compute%40developer.gserviceaccount.com&Signature=B3WW9GtoilieEQTo1KLVU%2BaZVZe9800NNlARr7mMDT4dJ8WgtHz4ZrfYB%2Fo9US%2FSy92nKhPRTx1uq31MgIZpH80ohleOAdmUDOqy8vDeycIn2psePP5%2FuwmX5UVH8cl%2BLsmaq6CmSBNLmmYCkZvJqbrkMDt7XmyJleSBh%2FB%2BVwWl7jmkmxKP7rJHltL7YZTDb914CMdPngmLpdhyNMJyo%2F8OEaZwnZgR4357psZpZh4wG9j5vqRiQJ2JaYl1rydzJ0%2BSAeb%2B9miafJ0uzNqJvujnD%2FN4VN9fwBcoJjD7%2BuiBFA0%2BxZAS5rCKs5YrkWY2RqjxJkmcHbmwldA08YNAtQ%3D%3D",
+                        "media_type": "image/jpeg",
+                        "document_category": "image",
+                        "size": 4730370,
+                        "geo_point": null,
+                        "heading": null,
+                        "pitch": null,
+                        "local_coordinates": null,
+                        "layer": 1002,
+                        "component": "sev 0",
+                        "component_display": "sev 0",
+                        "location_zone": null,
+                        "location_zone_display": "",
+                        "location_code": null,
+                        "location_code_display": "",
+                        "access": null,
+                        "access_display": "",
+                        "local_id": null,
+                        "project": 3345,
+                        "checklist": null,
+                        "cml": null,
+                        "source_media": null,
+                        "source_media_timestamp": null,
+                        "created_on": "2025-08-20T18:45:57.113710Z",
+                        "updated_on": "2025-08-21T17:37:19.377136Z",
+                        "captured_on": null,
+                        "display_url": "https://eastman.staging3.huvrdata.dev/inspection-media/1995"
+                    },
+                    "geometry": null,
+                    "geometry_extra": "FIELD_UPDATE_GENERATED",
+                    "note": null,
+                    "created_by": {
+                        "id": 3,
+                        "name": "William Wigfield",
+                        "email": "william.wigfield@huvrdata.com",
+                        "first_name": "William",
+                        "last_name": "Wigfield",
+                        "is_active": true
+                    },
+                    "created_on": "2025-08-21T17:37:19.386439Z",
+                    "updated_on": "2025-10-01T16:11:55.992889Z",
+                    "display_url": "https://eastman.staging3.huvrdata.dev/findings/1261"
+                }
+            ],
+            "project_name": "Turbine Annual Trip Checklist",
+            "created_by": {
+                "id": 3,
+                "name": "William Wigfield",
+                "email": "william.wigfield@huvrdata.com",
+                "first_name": "William",
+                "last_name": "Wigfield",
+                "is_active": true
+            },
+            "state_note": null,
+            "created_on": "2025-08-21T17:37:19.130908Z",
+            "updated_on": "2025-08-21T17:37:19.361294Z",
+            "labels": [],
+            "geo_point": null,
+            "heading": null,
+            "pitch": null,
+            "local_coordinates": null,
+            "component": "sev 0",
+            "component_display": "sev 0",
+            "location_zone": null,
+            "location_zone_display": "",
+            "location_code": null,
+            "location_code_display": "",
+            "access": null,
+            "access_display": "",
+            "client_id": null,
+            "external_id": null,
+            "description": "Bug?",
+            "severity": 3,
+            "severity_display": "12 Months",
+            "type": null,
+            "type_display": "",
+            "sub_type": null,
+            "sub_type_display": "",
+            "length": null,
+            "width": null,
+            "area": null,
+            "is_locked": false,
+            "state": "PENDING",
+            "checklist_line": "emn_txo_pre_ost_tasks::finding::*",
+            "captured_on": null,
+            "priority": "",
+            "repair_by": null,
+            "resolved_on": null,
+            "resolution_duration": null,
+            "next_inspection_date": null,
+            "layer": 1002,
+            "profile": 1002,
+            "checklist": 3350,
+            "project": 3345,
+            "cml": null,
+            "newer_defect": null
+        }

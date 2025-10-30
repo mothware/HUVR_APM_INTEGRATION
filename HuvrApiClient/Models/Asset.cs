@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using HuvrApiClient.JsonConverters;
 
 namespace HuvrApiClient.Models
 {
@@ -8,7 +9,11 @@ namespace HuvrApiClient.Models
     public class Asset
     {
         [JsonPropertyName("id")]
+        [JsonConverter(typeof(FlexibleIdConverter))]
         public string? Id { get; set; }
+
+        [JsonPropertyName("external_id")]
+        public string? ExternalId { get; set; }
 
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
@@ -33,6 +38,9 @@ namespace HuvrApiClient.Models
 
         [JsonPropertyName("updated_at")]
         public DateTime? UpdatedAt { get; set; }
+
+        [JsonPropertyName("library")]
+        public Library? Library { get; set; }
     }
 
     /// <summary>
@@ -40,6 +48,9 @@ namespace HuvrApiClient.Models
     /// </summary>
     public class AssetRequest
     {
+        [JsonPropertyName("external_id")]
+        public string? ExternalId { get; set; }
+
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
 

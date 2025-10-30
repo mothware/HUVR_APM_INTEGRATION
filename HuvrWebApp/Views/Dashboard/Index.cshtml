@@ -38,6 +38,271 @@
                     </div>
                 </div>
 
+                <!-- Filtering Options -->
+                <div id="filterSection" style="display:none;" class="mb-4">
+                    <div class="card bg-light">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#filterOptions">
+                                    <i class="bi bi-funnel"></i> Filter Options (Click to expand)
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="filterOptions" class="collapse">
+                            <div class="card-body">
+                                <!-- Assets Filters -->
+                                <div id="assetsFilters" class="filter-group" style="display:none;">
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label">External ID</label>
+                                            <input type="text" class="form-control filter-input" data-filter="external_id" placeholder="External system ID">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Name</label>
+                                            <input type="text" class="form-control filter-input" data-filter="name" placeholder="Asset name">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Asset Type</label>
+                                            <select id="assetTypeFilter" class="form-select filter-input" data-filter="asset_type">
+                                                <option value="">All</option>
+                                                <option value="loading" disabled>Loading...</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Location</label>
+                                            <input type="text" class="form-control filter-input" data-filter="location" placeholder="Location">
+                                        </div>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Status</label>
+                                            <select class="form-select filter-input" data-filter="status">
+                                                <option value="">All</option>
+                                                <option value="Active">Active</option>
+                                                <option value="Inactive">Inactive</option>
+                                                <option value="Maintenance">Maintenance</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check mt-4">
+                                                <input class="form-check-input" type="checkbox" id="includeLibraryAssets" data-include="library">
+                                                <label class="form-check-label" for="includeLibraryAssets">
+                                                    Include Library
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Projects Filters -->
+                                <div id="projectsFilters" class="filter-group" style="display:none;">
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Asset Search</label>
+                                            <input type="text" class="form-control filter-input" data-filter="asset_search" placeholder="Asset ID or name">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Status</label>
+                                            <select class="form-select filter-input" data-filter="status">
+                                                <option value="">All</option>
+                                                <option value="INITIALIZED">INITIALIZED</option>
+                                                <option value="ASSIGNED">ASSIGNED</option>
+                                                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                                                <option value="READY_FOR_REVIEW">READY_FOR_REVIEW</option>
+                                                <option value="PUBLISHED">PUBLISHED</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Project Type ID</label>
+                                            <input type="text" class="form-control filter-input" data-filter="project_type_id" placeholder="Project type">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Name</label>
+                                            <input type="text" class="form-control filter-input" data-filter="name" placeholder="Project name">
+                                        </div>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="includeParentProjects" data-include="parent">
+                                                <label class="form-check-label" for="includeParentProjects">
+                                                    Include Parent Asset
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="includeLibraryProjects" data-include="library">
+                                                <label class="form-check-label" for="includeLibraryProjects">
+                                                    Include Library
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="includeDefectsProjects" data-include="defects">
+                                                <label class="form-check-label" for="includeDefectsProjects">
+                                                    Include Defects
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Defects Filters -->
+                                <div id="defectsFilters" class="filter-group" style="display:none;">
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Project ID</label>
+                                            <input type="text" class="form-control filter-input" data-filter="project_id" placeholder="Project ID">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Asset ID</label>
+                                            <input type="text" class="form-control filter-input" data-filter="asset_id" placeholder="Asset ID">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Severity</label>
+                                            <select class="form-select filter-input" data-filter="severity">
+                                                <option value="">All</option>
+                                                <option value="Low">Low</option>
+                                                <option value="Medium">Medium</option>
+                                                <option value="High">High</option>
+                                                <option value="Critical">Critical</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Status</label>
+                                            <select class="form-select filter-input" data-filter="status">
+                                                <option value="">All</option>
+                                                <option value="Open">Open</option>
+                                                <option value="In Progress">In Progress</option>
+                                                <option value="Resolved">Resolved</option>
+                                                <option value="Closed">Closed</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Defect Type</label>
+                                            <input type="text" class="form-control filter-input" data-filter="defect_type" placeholder="e.g., Corrosion">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Measurements Filters -->
+                                <div id="measurementsFilters" class="filter-group" style="display:none;">
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Project ID</label>
+                                            <input type="text" class="form-control filter-input" data-filter="project_id" placeholder="Project ID">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Asset ID</label>
+                                            <input type="text" class="form-control filter-input" data-filter="asset_id" placeholder="Asset ID">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Measurement Type</label>
+                                            <input type="text" class="form-control filter-input" data-filter="measurement_type" placeholder="e.g., Ultrasonic Thickness">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Inspection Media Filters -->
+                                <div id="inspectionmediaFilters" class="filter-group" style="display:none;">
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Project ID</label>
+                                            <input type="text" class="form-control filter-input" data-filter="project_id" placeholder="Project ID">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">File Type</label>
+                                            <input type="text" class="form-control filter-input" data-filter="file_type" placeholder="e.g., image/jpeg">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Status</label>
+                                            <select class="form-select filter-input" data-filter="status">
+                                                <option value="">All</option>
+                                                <option value="PENDING">Pending</option>
+                                                <option value="UPLOADED">Uploaded</option>
+                                                <option value="FAILED">Failed</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Checklists Filters -->
+                                <div id="checklistsFilters" class="filter-group" style="display:none;">
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Project ID</label>
+                                            <input type="text" class="form-control filter-input" data-filter="project_id" placeholder="Project ID">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Status</label>
+                                            <select class="form-select filter-input" data-filter="status">
+                                                <option value="">All</option>
+                                                <option value="Draft">Draft</option>
+                                                <option value="In Progress">In Progress</option>
+                                                <option value="Completed">Completed</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Template ID</label>
+                                            <input type="text" class="form-control filter-input" data-filter="template_id" placeholder="Template ID">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Users Filters -->
+                                <div id="usersFilters" class="filter-group" style="display:none;">
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Email</label>
+                                            <input type="text" class="form-control filter-input" data-filter="email" placeholder="Email address">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Role</label>
+                                            <input type="text" class="form-control filter-input" data-filter="role" placeholder="Role">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Active Status</label>
+                                            <select class="form-select filter-input" data-filter="is_active">
+                                                <option value="">All</option>
+                                                <option value="true">Active</option>
+                                                <option value="false">Inactive</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Workspaces Filters -->
+                                <div id="workspacesFilters" class="filter-group" style="display:none;">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Name</label>
+                                            <input type="text" class="form-control filter-input" data-filter="name" placeholder="Workspace name">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Active Status</label>
+                                            <select class="form-select filter-input" data-filter="is_active">
+                                                <option value="">All</option>
+                                                <option value="true">Active</option>
+                                                <option value="false">Inactive</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <button id="clearFiltersBtn" class="btn btn-outline-secondary">
+                                            <i class="bi bi-x-circle"></i> Clear All Filters
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="mb-4">
                     <button id="executeBtn" class="btn btn-primary btn-lg px-5">
                         Execute API Call
@@ -105,6 +370,105 @@
 @section Scripts {
     <script>
         $(document).ready(function() {
+            // Load asset types function
+            function loadAssetTypes() {
+                $.ajax({
+                    url: '@Url.Action("GetAssetTypes", "Dashboard")',
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.success && response.data) {
+                            var $select = $('#assetTypeFilter');
+                            // Clear existing options except "All"
+                            $select.find('option:not(:first)').remove();
+
+                            // Add asset types
+                            response.data.forEach(function(assetType) {
+                                $select.append($('<option>', {
+                                    value: assetType.name,
+                                    text: assetType.name
+                                }));
+                            });
+                        }
+                    },
+                    error: function() {
+                        var $select = $('#assetTypeFilter');
+                        $select.find('option:not(:first)').remove();
+                        $select.append($('<option>', {
+                            value: '',
+                            text: 'Error loading types',
+                            disabled: true
+                        }));
+                    }
+                });
+            }
+
+            // Handle entity type change
+            $('#entityType').change(function() {
+                var entityType = $(this).val();
+                var method = $('#method').val();
+
+                // Hide all filter groups
+                $('.filter-group').hide();
+
+                // Show filter section only for list method
+                if (entityType && method === 'list') {
+                    $('#filterSection').show();
+                    $('#' + entityType + 'Filters').show();
+
+                    // Load asset types if assets is selected
+                    if (entityType === 'assets') {
+                        loadAssetTypes();
+                    }
+                } else {
+                    $('#filterSection').hide();
+                }
+            });
+
+            // Handle method change
+            $('#method').change(function() {
+                var method = $(this).val();
+                var entityType = $('#entityType').val();
+
+                if (method === 'get') {
+                    $('#parameters').prop('disabled', false);
+                    $('#filterSection').hide();
+                } else if (method === 'list') {
+                    $('#parameters').prop('disabled', true).val('');
+                    if (entityType) {
+                        $('#filterSection').show();
+                        $('.filter-group').hide();
+                        $('#' + entityType + 'Filters').show();
+
+                        // Load asset types if assets is selected
+                        if (entityType === 'assets') {
+                            loadAssetTypes();
+                        }
+                    }
+                } else {
+                    $('#parameters').prop('disabled', true).val('');
+                    $('#filterSection').hide();
+                }
+            });
+
+            // Clear filters button
+            $('#clearFiltersBtn').click(function() {
+                // Clear filter inputs
+                $('.filter-input').each(function() {
+                    var $input = $(this);
+                    if ($input.is(':checkbox')) {
+                        $input.prop('checked', false);
+                    } else if ($input.is('select')) {
+                        $input.prop('selectedIndex', 0);
+                    } else {
+                        $input.val('');
+                    }
+                });
+
+                // Clear include checkboxes
+                $('input[data-include]').prop('checked', false);
+            });
+
+            // Execute button
             $('#executeBtn').click(function() {
                 var entityType = $('#entityType').val();
                 var method = $('#method').val();
@@ -120,6 +484,48 @@
                     return;
                 }
 
+                // Collect filter values if using list method
+                var filters = {};
+                if (method === 'list') {
+                    var includes = [];
+
+                    // Collect regular filter inputs
+                    $('#' + entityType + 'Filters .filter-input').each(function() {
+                        var $input = $(this);
+                        var filterName = $input.data('filter');
+                        var value;
+
+                        // Handle checkboxes differently
+                        if ($input.is(':checkbox')) {
+                            if ($input.is(':checked')) {
+                                value = $input.val();
+                            }
+                        } else {
+                            value = $input.val();
+                        }
+
+                        if (value) {
+                            filters[filterName] = value;
+                        }
+                    });
+
+                    // Collect include parameters (separate handling)
+                    $('#' + entityType + 'Filters input[data-include]').each(function() {
+                        var $checkbox = $(this);
+                        if ($checkbox.is(':checked')) {
+                            var includeName = $checkbox.data('include');
+                            if (includeName) {
+                                includes.push(includeName);
+                            }
+                        }
+                    });
+
+                    // Add comma-separated include parameter if any includes are checked
+                    if (includes.length > 0) {
+                        filters['include'] = includes.join(',');
+                    }
+                }
+
                 $('#loading').show();
                 $('#error').hide();
                 $('#results').hide();
@@ -130,7 +536,8 @@
                     data: {
                         entityType: entityType,
                         method: method,
-                        parameters: parameters
+                        parameters: parameters,
+                        filters: JSON.stringify(filters)
                     },
                     success: function(response) {
                         $('#loading').hide();
@@ -152,18 +559,11 @@
                 });
             });
 
+            // Clear results button
             $('#clearBtn').click(function() {
                 $('#results').hide();
                 $('#error').hide();
                 $('#resultsContent').text('');
-            });
-
-            $('#method').change(function() {
-                if ($(this).val() === 'get') {
-                    $('#parameters').prop('disabled', false);
-                } else {
-                    $('#parameters').prop('disabled', true).val('');
-                }
             });
         });
     </script>

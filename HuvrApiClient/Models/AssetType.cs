@@ -4,25 +4,19 @@ using HuvrApiClient.JsonConverters;
 namespace HuvrApiClient.Models
 {
     /// <summary>
-    /// Represents a HUVR user
+    /// Represents an asset type classification
     /// </summary>
-    public class User
+    public class AssetType
     {
         [JsonPropertyName("id")]
         [JsonConverter(typeof(FlexibleIdConverter))]
         public string? Id { get; set; }
 
-        [JsonPropertyName("email")]
-        public string Email { get; set; } = string.Empty;
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
 
-        [JsonPropertyName("first_name")]
-        public string? FirstName { get; set; }
-
-        [JsonPropertyName("last_name")]
-        public string? LastName { get; set; }
-
-        [JsonPropertyName("role")]
-        public string? Role { get; set; }
+        [JsonPropertyName("description")]
+        public string? Description { get; set; }
 
         [JsonPropertyName("is_active")]
         public bool IsActive { get; set; }
@@ -32,15 +26,18 @@ namespace HuvrApiClient.Models
 
         [JsonPropertyName("updated_at")]
         public DateTime? UpdatedAt { get; set; }
+
+        [JsonPropertyName("metadata")]
+        public Dictionary<string, object>? Metadata { get; set; }
     }
 
     /// <summary>
-    /// Response model for paginated user list
+    /// Response for listing asset types
     /// </summary>
-    public class UserListResponse
+    public class AssetTypeListResponse
     {
         [JsonPropertyName("results")]
-        public List<User> Results { get; set; } = new();
+        public List<AssetType> Results { get; set; } = new();
 
         [JsonPropertyName("count")]
         public int Count { get; set; }

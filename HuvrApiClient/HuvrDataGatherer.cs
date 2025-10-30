@@ -193,11 +193,11 @@ namespace HuvrApiClient
             var summary = new DefectsSummary
             {
                 TotalDefects = defects.Count,
-                BySeverity = defects.GroupBy(d => d.Severity ?? "Unknown")
+                BySeverity = defects.GroupBy(d => d.Severity?.ToString() ?? "Unknown")
                     .ToDictionary(g => g.Key, g => g.Count()),
-                ByStatus = defects.GroupBy(d => d.Status ?? "Unknown")
+                ByStatus = defects.GroupBy(d => d.State ?? "Unknown")
                     .ToDictionary(g => g.Key, g => g.Count()),
-                ByType = defects.GroupBy(d => d.DefectType ?? "Unknown")
+                ByType = defects.GroupBy(d => d.Type ?? "Unknown")
                     .ToDictionary(g => g.Key, g => g.Count()),
                 Defects = defects
             };

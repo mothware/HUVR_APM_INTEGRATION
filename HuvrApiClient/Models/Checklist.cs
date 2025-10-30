@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using HuvrApiClient.JsonConverters;
 
 namespace HuvrApiClient.Models
 {
@@ -8,6 +9,7 @@ namespace HuvrApiClient.Models
     public class Checklist
     {
         [JsonPropertyName("id")]
+        [JsonConverter(typeof(FlexibleIdConverter))]
         public string? Id { get; set; }
 
         [JsonPropertyName("project_id")]

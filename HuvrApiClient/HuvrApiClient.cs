@@ -120,6 +120,17 @@ namespace HuvrApiClient
         }
 
         /// <summary>
+        /// Lists all assets with strongly-typed filtering parameters
+        /// </summary>
+        /// <param name="parameters">Strongly-typed query parameters</param>
+        public async Task<AssetListResponse> ListAssetsAsync(
+            AssetQueryParameters parameters,
+            CancellationToken cancellationToken = default)
+        {
+            return await ListAssetsAsync(parameters.ToDictionary(), cancellationToken);
+        }
+
+        /// <summary>
         /// Gets details for a specific asset
         /// </summary>
         /// <param name="assetId">The asset ID</param>
@@ -179,6 +190,51 @@ namespace HuvrApiClient
 
         #endregion
 
+        #region Asset Types
+
+        /// <summary>
+        /// Lists all asset types with optional filtering
+        /// </summary>
+        /// <param name="queryParams">Optional query parameters for filtering</param>
+        public async Task<AssetTypeListResponse> ListAssetTypesAsync(
+            Dictionary<string, string>? queryParams = null,
+            CancellationToken cancellationToken = default)
+        {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            var url = BuildUrl("/api/asset-types/", queryParams);
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<AssetTypeListResponse>(cancellationToken)
+                ?? new AssetTypeListResponse();
+        }
+
+        /// <summary>
+        /// Gets all active asset types
+        /// </summary>
+        public async Task<List<AssetType>> GetActiveAssetTypesAsync(CancellationToken cancellationToken = default)
+        {
+            var response = await ListAssetTypesAsync(new Dictionary<string, string>
+            {
+                { "is_active", "true" }
+            }, cancellationToken);
+            return response.Results;
+        }
+
+        /// <summary>
+        /// Gets details for a specific asset type
+        /// </summary>
+        /// <param name="assetTypeId">The asset type ID</param>
+        public async Task<AssetType> GetAssetTypeAsync(string assetTypeId, CancellationToken cancellationToken = default)
+        {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            var response = await _httpClient.GetAsync($"/api/asset-types/{assetTypeId}/", cancellationToken);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<AssetType>(cancellationToken)
+                ?? throw new InvalidOperationException("Asset type not found");
+        }
+
+        #endregion
+
         #region Projects
 
         /// <summary>
@@ -195,6 +251,17 @@ namespace HuvrApiClient
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<ProjectListResponse>(cancellationToken)
                 ?? new ProjectListResponse();
+        }
+
+        /// <summary>
+        /// Lists all projects with strongly-typed filtering parameters
+        /// </summary>
+        /// <param name="parameters">Strongly-typed query parameters</param>
+        public async Task<ProjectListResponse> ListProjectsAsync(
+            ProjectQueryParameters parameters,
+            CancellationToken cancellationToken = default)
+        {
+            return await ListProjectsAsync(parameters.ToDictionary(), cancellationToken);
         }
 
         /// <summary>
@@ -275,6 +342,17 @@ namespace HuvrApiClient
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<InspectionMediaListResponse>(cancellationToken)
                 ?? new InspectionMediaListResponse();
+        }
+
+        /// <summary>
+        /// Lists all inspection media with strongly-typed filtering parameters
+        /// </summary>
+        /// <param name="parameters">Strongly-typed query parameters</param>
+        public async Task<InspectionMediaListResponse> ListInspectionMediaAsync(
+            InspectionMediaQueryParameters parameters,
+            CancellationToken cancellationToken = default)
+        {
+            return await ListInspectionMediaAsync(parameters.ToDictionary(), cancellationToken);
         }
 
         /// <summary>
@@ -403,6 +481,17 @@ namespace HuvrApiClient
         }
 
         /// <summary>
+        /// Lists all checklists with strongly-typed filtering parameters
+        /// </summary>
+        /// <param name="parameters">Strongly-typed query parameters</param>
+        public async Task<ChecklistListResponse> ListChecklistsAsync(
+            ChecklistQueryParameters parameters,
+            CancellationToken cancellationToken = default)
+        {
+            return await ListChecklistsAsync(parameters.ToDictionary(), cancellationToken);
+        }
+
+        /// <summary>
         /// Gets details for a specific checklist
         /// </summary>
         /// <param name="checklistId">The checklist ID</param>
@@ -477,6 +566,17 @@ namespace HuvrApiClient
         }
 
         /// <summary>
+        /// Lists all defects with strongly-typed filtering parameters
+        /// </summary>
+        /// <param name="parameters">Strongly-typed query parameters</param>
+        public async Task<DefectListResponse> ListDefectsAsync(
+            DefectQueryParameters parameters,
+            CancellationToken cancellationToken = default)
+        {
+            return await ListDefectsAsync(parameters.ToDictionary(), cancellationToken);
+        }
+
+        /// <summary>
         /// Gets details for a specific defect
         /// </summary>
         /// <param name="defectId">The defect ID</param>
@@ -544,6 +644,17 @@ namespace HuvrApiClient
         }
 
         /// <summary>
+        /// Lists all measurements with strongly-typed filtering parameters
+        /// </summary>
+        /// <param name="parameters">Strongly-typed query parameters</param>
+        public async Task<MeasurementListResponse> ListMeasurementsAsync(
+            MeasurementQueryParameters parameters,
+            CancellationToken cancellationToken = default)
+        {
+            return await ListMeasurementsAsync(parameters.ToDictionary(), cancellationToken);
+        }
+
+        /// <summary>
         /// Gets details for a specific measurement
         /// </summary>
         /// <param name="measurementId">The measurement ID</param>
@@ -599,6 +710,200 @@ namespace HuvrApiClient
 
         #endregion
 
+        #region Library Media
+
+        /// <summary>
+        /// Lists library media for a specific library
+        /// </summary>
+        /// <param name="libraryId">The library ID to fetch media for</param>
+        /// <param name="queryParams">Optional query parameters for filtering</param>
+        public async Task<LibraryMediaListResponse> ListLibraryMediaAsync(
+            string libraryId,
+            Dictionary<string, string>? queryParams = null,
+            CancellationToken cancellationToken = default)
+        {
+            await EnsureAuthenticatedAsync(cancellationToken);
+
+            var parameters = queryParams ?? new Dictionary<string, string>();
+            parameters["library"] = libraryId;
+
+            var url = BuildUrl("/api/library-media/", parameters);
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<LibraryMediaListResponse>(cancellationToken)
+                ?? new LibraryMediaListResponse();
+        }
+
+        /// <summary>
+        /// Gets all library media for a specific library by automatically handling pagination
+        /// </summary>
+        /// <param name="libraryId">The library ID to fetch media for</param>
+        /// <param name="maxResults">Maximum number of results to retrieve (default: unlimited)</param>
+        public async Task<List<LibraryMedia>> GetAllLibraryMediaAsync(
+            string libraryId,
+            int? maxResults = null,
+            CancellationToken cancellationToken = default)
+        {
+            var allMedia = new List<LibraryMedia>();
+            var queryParams = new Dictionary<string, string> { { "library", libraryId } };
+            var url = "/api/library-media/";
+
+            while (url != null && (!maxResults.HasValue || allMedia.Count < maxResults.Value))
+            {
+                var response = await GetPagedResultAsync<LibraryMediaListResponse>(url, queryParams, cancellationToken);
+                allMedia.AddRange(response.Results);
+
+                if (maxResults.HasValue && allMedia.Count >= maxResults.Value)
+                {
+                    allMedia = allMedia.Take(maxResults.Value).ToList();
+                    break;
+                }
+
+                url = response.Next;
+                queryParams = null;
+            }
+
+            return allMedia;
+        }
+
+        /// <summary>
+        /// Gets details for a specific library media item
+        /// </summary>
+        /// <param name="mediaId">The library media ID</param>
+        public async Task<LibraryMedia> GetLibraryMediaAsync(
+            string mediaId,
+            CancellationToken cancellationToken = default)
+        {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            var response = await _httpClient.GetAsync($"/api/library-media/{mediaId}/", cancellationToken);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<LibraryMedia>(cancellationToken)
+                ?? throw new InvalidOperationException("Library media not found");
+        }
+
+        /// <summary>
+        /// Downloads a library media file to the specified directory
+        /// </summary>
+        /// <param name="libraryMedia">The library media object containing file URL</param>
+        /// <param name="downloadDirectory">Directory to save the file (default: C:\temp)</param>
+        /// <param name="fileName">Optional custom filename (uses media name if not specified)</param>
+        /// <returns>Full path to the downloaded file</returns>
+        public async Task<string> DownloadLibraryMediaFileAsync(
+            LibraryMedia libraryMedia,
+            string? downloadDirectory = null,
+            string? fileName = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(libraryMedia.File))
+            {
+                throw new InvalidOperationException("Library media does not have a file URL");
+            }
+
+            // Use default directory if not specified
+            downloadDirectory ??= @"C:\temp";
+
+            // Ensure directory exists
+            Directory.CreateDirectory(downloadDirectory);
+
+            // Determine filename
+            if (string.IsNullOrEmpty(fileName))
+            {
+                // Try to extract extension from media_type or file URL
+                var extension = GetFileExtensionFromMediaType(libraryMedia.MediaType);
+                if (string.IsNullOrEmpty(extension))
+                {
+                    // Try to get extension from URL
+                    var uri = new Uri(libraryMedia.File);
+                    extension = Path.GetExtension(uri.LocalPath);
+                }
+
+                fileName = !string.IsNullOrEmpty(libraryMedia.Name)
+                    ? $"{SanitizeFileName(libraryMedia.Name)}{extension}"
+                    : $"library_media_{libraryMedia.Id}{extension}";
+            }
+
+            var filePath = Path.Combine(downloadDirectory, fileName);
+
+            // Download the file
+            var fileBytes = await _httpClient.GetByteArrayAsync(libraryMedia.File, cancellationToken);
+            await File.WriteAllBytesAsync(filePath, fileBytes, cancellationToken);
+
+            return filePath;
+        }
+
+        /// <summary>
+        /// Downloads multiple library media files to the specified directory
+        /// </summary>
+        /// <param name="libraryMediaList">List of library media to download</param>
+        /// <param name="downloadDirectory">Directory to save files (default: C:\temp)</param>
+        /// <returns>Dictionary mapping media ID to downloaded file path</returns>
+        public async Task<Dictionary<string, string>> DownloadLibraryMediaFilesAsync(
+            List<LibraryMedia> libraryMediaList,
+            string? downloadDirectory = null,
+            CancellationToken cancellationToken = default)
+        {
+            var results = new Dictionary<string, string>();
+
+            foreach (var media in libraryMediaList)
+            {
+                if (!string.IsNullOrEmpty(media.File) && !string.IsNullOrEmpty(media.Id))
+                {
+                    try
+                    {
+                        var filePath = await DownloadLibraryMediaFileAsync(media, downloadDirectory, null, cancellationToken);
+                        results[media.Id] = filePath;
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log error but continue with other files
+                        Console.WriteLine($"Failed to download media {media.Id}: {ex.Message}");
+                    }
+                }
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// Helper method to get file extension from media type
+        /// </summary>
+        private static string GetFileExtensionFromMediaType(string? mediaType)
+        {
+            if (string.IsNullOrEmpty(mediaType))
+                return string.Empty;
+
+            return mediaType.ToLower() switch
+            {
+                "image/jpeg" or "image/jpg" => ".jpg",
+                "image/png" => ".png",
+                "image/gif" => ".gif",
+                "image/bmp" => ".bmp",
+                "image/webp" => ".webp",
+                "application/pdf" => ".pdf",
+                "video/mp4" => ".mp4",
+                "video/avi" => ".avi",
+                "video/quicktime" => ".mov",
+                "application/msword" => ".doc",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => ".docx",
+                "application/vnd.ms-excel" => ".xls",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => ".xlsx",
+                "text/plain" => ".txt",
+                "text/csv" => ".csv",
+                _ => string.Empty
+            };
+        }
+
+        /// <summary>
+        /// Helper method to sanitize filename
+        /// </summary>
+        private static string SanitizeFileName(string fileName)
+        {
+            var invalidChars = Path.GetInvalidFileNameChars();
+            return string.Join("_", fileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        #endregion
+
         #region Users
 
         /// <summary>
@@ -615,6 +920,17 @@ namespace HuvrApiClient
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<UserListResponse>(cancellationToken)
                 ?? new UserListResponse();
+        }
+
+        /// <summary>
+        /// Lists all users with strongly-typed filtering parameters
+        /// </summary>
+        /// <param name="parameters">Strongly-typed query parameters</param>
+        public async Task<UserListResponse> ListUsersAsync(
+            UserQueryParameters parameters,
+            CancellationToken cancellationToken = default)
+        {
+            return await ListUsersAsync(parameters.ToDictionary(), cancellationToken);
         }
 
         /// <summary>
@@ -648,6 +964,17 @@ namespace HuvrApiClient
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<WorkspaceListResponse>(cancellationToken)
                 ?? new WorkspaceListResponse();
+        }
+
+        /// <summary>
+        /// Lists all workspaces with strongly-typed filtering parameters
+        /// </summary>
+        /// <param name="parameters">Strongly-typed query parameters</param>
+        public async Task<WorkspaceListResponse> ListWorkspacesAsync(
+            WorkspaceQueryParameters parameters,
+            CancellationToken cancellationToken = default)
+        {
+            return await ListWorkspacesAsync(parameters.ToDictionary(), cancellationToken);
         }
 
         /// <summary>
