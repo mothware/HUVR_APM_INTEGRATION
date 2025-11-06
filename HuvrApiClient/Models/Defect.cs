@@ -34,7 +34,7 @@ namespace HuvrApiClient.Models
         public DateTime? UpdatedOn { get; set; }
 
         [JsonPropertyName("labels")]
-        public List<string>? Labels { get; set; }
+        public object? Labels { get; set; }
 
         [JsonPropertyName("geo_point")]
         public object? GeoPoint { get; set; }
@@ -130,7 +130,7 @@ namespace HuvrApiClient.Models
         public DateTime? ResolvedOn { get; set; }
 
         [JsonPropertyName("resolution_duration")]
-        public int? ResolutionDuration { get; set; }
+        public String? ResolutionDuration { get; set; }
 
         [JsonPropertyName("next_inspection_date")]
         public DateTime? NextInspectionDate { get; set; }
