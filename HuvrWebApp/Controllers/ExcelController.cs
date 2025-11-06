@@ -91,6 +91,13 @@ namespace HuvrWebApp.Controllers
 
             try
             {
+                // Normalize entity type
+                var normalizedEntityType = NormalizeEntityType(request.EntityType);
+
+                // Determine if we need related entity data
+                var selectedMappings = request.Mappings.Where(m => m.IsSelected).ToList();
+                var hasRelatedFields = selectedMappings.Any(m => m.ApiField.Contains('.'));
+
                 // Fetch data from API
                 var data = await FetchDataForEntityType(client, request.EntityType);
 
@@ -99,12 +106,38 @@ namespace HuvrWebApp.Controllers
                     return Json(new { success = false, error = "No data available" });
                 }
 
+                // Convert to JObjects for processing
+                var jsonData = data.Select(d => JObject.FromObject(d)).ToList();
+
+                // If we have related fields, fetch and cache related entity data
+                Services.RelatedEntityFieldResolver? resolver = null;
+                if (hasRelatedFields)
+                {
+                    var entityCache = new Dictionary<string, List<JObject>>();
+                    entityCache[normalizedEntityType] = jsonData;
+
+                    // Determine which related entities we need
+                    var requiredRelatedEntities = Services.RelatedEntityFieldResolver.GetRequiredRelatedEntities(
+                        normalizedEntityType, selectedMappings);
+
+                    // Fetch all required related entities
+                    foreach (var relatedEntityType in requiredRelatedEntities)
+                    {
+                        var relatedData = await FetchDataForEntityType(client, relatedEntityType);
+                        if (relatedData != null && relatedData.Any())
+                        {
+                            entityCache[relatedEntityType] = relatedData.Select(d => JObject.FromObject(d)).ToList();
+                        }
+                    }
+
+                    resolver = Services.RelatedEntityFieldResolver.BuildCache(entityCache);
+                }
+
                 // Create Excel file
                 using var workbook = new XLWorkbook();
                 var worksheet = workbook.Worksheets.Add(request.EntityType);
 
                 // Add headers
-                var selectedMappings = request.Mappings.Where(m => m.IsSelected).ToList();
                 for (int i = 0; i < selectedMappings.Count; i++)
                 {
                     var mapping = selectedMappings[i];
@@ -118,14 +151,23 @@ namespace HuvrWebApp.Controllers
 
                 // Add data rows
                 int row = 2;
-                foreach (var item in data)
+                foreach (var jsonObject in jsonData)
                 {
-                    var jsonObject = JObject.FromObject(item);
-
                     for (int i = 0; i < selectedMappings.Count; i++)
                     {
                         var mapping = selectedMappings[i];
-                        var value = GetNestedValue(jsonObject, mapping.ApiField);
+                        object? value;
+
+                        // Use resolver for related entity fields
+                        if (hasRelatedFields && mapping.ApiField.Contains('.') && resolver != null)
+                        {
+                            value = resolver.ResolveFieldValue(jsonObject, mapping.ApiField, normalizedEntityType);
+                        }
+                        else
+                        {
+                            value = GetNestedValue(jsonObject, mapping.ApiField);
+                        }
+
                         worksheet.Cell(row, i + 1).Value = value?.ToString() ?? "";
                     }
                     row++;

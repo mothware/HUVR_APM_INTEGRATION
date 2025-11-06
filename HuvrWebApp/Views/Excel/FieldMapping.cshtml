@@ -2,15 +2,41 @@
     ViewData["Title"] = "Excel Field Mapping";
 }
 
+<div class="row mb-3">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Home")">Home</a></li>
+                <li class="breadcrumb-item active">Excel Export</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="btn-group" role="group">
+            <a href="@Url.Action("FieldMapping", "Excel")" class="btn btn-primary active">
+                <i class="bi bi-file-earmark-excel"></i> Single Sheet Export
+            </a>
+            <a href="@Url.Action("MultiSheetMapping", "Excel")" class="btn btn-outline-primary">
+                <i class="bi bi-files"></i> Multi-Sheet Export
+            </a>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
-                <h3 class="mb-0">Excel Field Mapping & Export</h3>
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0"><i class="bi bi-file-earmark-excel me-2"></i>Excel Field Mapping & Export</h3>
+                <small>Export a single entity type with optional related entity fields</small>
             </div>
             <div class="card-body">
                 <div class="alert alert-info">
-                    <strong>Instructions:</strong> Select an entity type, map API fields to Excel columns, and export to Excel.
+                    <strong><i class="bi bi-info-circle me-2"></i>Instructions:</strong> Select an entity type, choose fields (including related entity fields), and export to Excel.
+                    <br><small class="mt-2 d-block"><strong>Tip:</strong> Related fields like "Asset.Name" let you access data from linked models!</small>
                 </div>
 
                 <div class="row mb-4">
@@ -37,18 +63,25 @@
 
                 <div id="mappingSection" style="display:none;">
                     <hr>
-                    <h5 class="mb-3">Field Mappings</h5>
-                    <p class="text-muted">Map API fields to Excel column names. Leave Excel column blank to use the API field name.</p>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="mb-0">Field Mappings</h5>
+                            <p class="text-muted mb-0">Map API fields to Excel column names. Related fields are marked with a badge.</p>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="selectAll" checked>
+                            <label class="form-check-label fw-bold" for="selectAll">Select All</label>
+                        </div>
+                    </div>
 
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
                             <thead class="table-light">
                                 <tr>
-                                    <th width="50">
-                                        <input type="checkbox" id="selectAll" checked>
-                                    </th>
-                                    <th>API Field</th>
-                                    <th>Excel Column Name</th>
+                                    <th width="50">Include</th>
+                                    <th width="40%">API Field</th>
+                                    <th width="30%">Excel Column Name</th>
+                                    <th width="30%">Field Type</th>
                                 </tr>
                             </thead>
                             <tbody id="mappingTableBody">
@@ -85,27 +118,36 @@
 <div class="row mt-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">Field Mapping Examples</h4>
+            <div class="card-header bg-light">
+                <h4 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Field Mapping Examples & Tips</h4>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <h6 class="fw-bold">Example Mappings:</h6>
-                        <ul>
+                        <h6 class="fw-bold"><i class="bi bi-check-circle text-success me-1"></i>Direct Field Examples:</h6>
+                        <ul class="mb-3">
                             <li><code>Id</code> → "Asset ID"</li>
                             <li><code>Name</code> → "Asset Name"</li>
                             <li><code>CreatedAt</code> → "Created Date"</li>
                             <li><code>Status</code> → "Current Status"</li>
                         </ul>
+                        <h6 class="fw-bold"><i class="bi bi-link-45deg text-info me-1"></i>Related Field Examples:</h6>
+                        <ul>
+                            <li><code>Asset.Name</code> → "Asset Name" (from Project)</li>
+                            <li><code>User.Email</code> → "Identified By" (from Defect)</li>
+                            <li><code>Project.Status</code> → "Project Status" (from Defect)</li>
+                            <li><code>Library.Name</code> → "Library" (from Asset)</li>
+                        </ul>
                     </div>
                     <div class="col-md-6">
-                        <h6 class="fw-bold">Tips:</h6>
+                        <h6 class="fw-bold"><i class="bi bi-info-circle text-primary me-1"></i>Tips:</h6>
                         <ul>
-                            <li>Leave Excel column blank to use API field name</li>
-                            <li>Uncheck fields you don't want to include</li>
-                            <li>Use "Select All" to quickly toggle all fields</li>
-                            <li>Click "Reset" to restore default mappings</li>
+                            <li><strong>Related Fields:</strong> Access data from linked models using dot notation</li>
+                            <li><strong>Field Selection:</strong> Uncheck fields you don't want to include</li>
+                            <li><strong>Column Names:</strong> Customize Excel column names or use defaults</li>
+                            <li><strong>Quick Toggle:</strong> Use "Select All" to toggle all fields at once</li>
+                            <li><strong>Reset:</strong> Click "Reset" to restore default mappings</li>
+                            <li><strong>Multi-Sheet:</strong> Need multiple entity types? Try <a href="@Url.Action("MultiSheetMapping", "Excel")">Multi-Sheet Export</a></li>
                         </ul>
                     </div>
                 </div>
@@ -148,12 +190,12 @@
 
         function loadFields(entityType) {
             $('#loading').show();
-            $('#loadingText').text('Loading fields...');
+            $('#loadingText').text('Loading fields with relationships...');
             $('#error').hide();
             $('#success').hide();
 
             $.ajax({
-                url: '@Url.Action("GetAvailableFields", "Excel")',
+                url: '@Url.Action("GetAvailableFieldsWithRelationships", "Excel")',
                 type: 'GET',
                 data: { entityType: entityType },
                 success: function(response) {
@@ -180,21 +222,47 @@
 
             fields.forEach(function(field) {
                 var row = $('<tr>');
+                var fieldPath = field.fieldPath || field;
+                var isRelated = field.isRelated || false;
+                var relatedEntity = field.relatedEntity || '';
+                var description = field.description || '';
 
+                // Checkbox cell
                 var checkboxCell = $('<td class="text-center">').append(
-                    $('<input type="checkbox" class="field-checkbox form-check-input">').prop('checked', true).data('field', field)
+                    $('<input type="checkbox" class="field-checkbox form-check-input">')
+                        .prop('checked', true)
+                        .data('field-path', fieldPath)
                 );
 
-                var fieldCell = $('<td>').html('<code>' + field + '</code>');
+                // Field cell with badge
+                var fieldCell = $('<td>').html('<code>' + fieldPath + '</code>');
+                if (isRelated) {
+                    fieldCell.append(' <span class="badge bg-info">Related: ' + relatedEntity + '</span>');
+                } else {
+                    fieldCell.append(' <span class="badge bg-secondary">Direct</span>');
+                }
+                if (description) {
+                    fieldCell.append('<br><small class="text-muted">' + description + '</small>');
+                }
 
+                // Excel column cell
+                var displayName = field.displayName || fieldPath;
                 var excelColumnCell = $('<td>').append(
                     $('<input type="text" class="form-control excel-column">')
-                        .attr('placeholder', field)
-                        .data('field', field)
-                        .val(formatFieldName(field))
+                        .attr('placeholder', displayName)
+                        .data('field-path', fieldPath)
+                        .val(displayName)
                 );
 
-                row.append(checkboxCell, fieldCell, excelColumnCell);
+                // Type cell
+                var typeCell = $('<td>');
+                if (isRelated) {
+                    typeCell.html('<i class="bi bi-link-45deg text-info"></i> Related');
+                } else {
+                    typeCell.html('<i class="bi bi-check-circle text-success"></i> Direct');
+                }
+
+                row.append(checkboxCell, fieldCell, excelColumnCell, typeCell);
                 tbody.append(row);
             });
         }
@@ -212,12 +280,12 @@
 
             $('.field-checkbox').each(function() {
                 var checkbox = $(this);
-                var field = checkbox.data('field');
-                var excelColumn = $('.excel-column[data-field="' + field + '"]').val() || field;
+                var fieldPath = checkbox.data('field-path');
+                var excelColumn = $('.excel-column[data-field-path="' + fieldPath + '"]').val() || fieldPath;
                 var isSelected = checkbox.prop('checked');
 
                 mappings.push({
-                    ApiField: field,
+                    ApiField: fieldPath,
                     ExcelColumn: excelColumn,
                     IsSelected: isSelected
                 });
@@ -274,7 +342,7 @@
                         window.URL.revokeObjectURL(url);
                         document.body.removeChild(a);
 
-                        $('#success').text('Excel file downloaded successfully!').show();
+                        $('#success').html('<i class="bi bi-check-circle me-2"></i>Excel file downloaded successfully! <strong>' + (mappings.filter(m => m.IsSelected).length) + '</strong> fields exported.').show();
 
                         setTimeout(function() {
                             $('#success').fadeOut();

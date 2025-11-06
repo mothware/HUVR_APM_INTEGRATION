@@ -2,15 +2,41 @@
     ViewData["Title"] = "Multi-Sheet Excel Export";
 }
 
+<div class="row mb-3">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Home")">Home</a></li>
+                <li class="breadcrumb-item active">Excel Export</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="btn-group" role="group">
+            <a href="@Url.Action("FieldMapping", "Excel")" class="btn btn-outline-primary">
+                <i class="bi bi-file-earmark-excel"></i> Single Sheet Export
+            </a>
+            <a href="@Url.Action("MultiSheetMapping", "Excel")" class="btn btn-primary active">
+                <i class="bi bi-files"></i> Multi-Sheet Export
+            </a>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-12">
         <div class="card">
             <div class="card-header bg-primary text-white">
-                <h3 class="mb-0">Multi-Sheet Excel Export with Model Linking</h3>
+                <h3 class="mb-0"><i class="bi bi-files me-2"></i>Multi-Sheet Excel Export with Model Linking</h3>
+                <small>Create Excel workbooks with multiple sheets and cross-model data linking</small>
             </div>
             <div class="card-body">
                 <div class="alert alert-info">
-                    <strong>Instructions:</strong> Configure multiple sheets with different entity types. You can map fields from related entities using dot notation (e.g., "Asset.Name" for a Project's related Asset).
+                    <strong><i class="bi bi-info-circle me-2"></i>Instructions:</strong> Configure multiple sheets with different entity types. You can map fields from related entities using dot notation (e.g., "Asset.Name" for a Project's related Asset).
+                    <br><small class="mt-2 d-block"><strong>Tip:</strong> Configure starting rows per sheet to leave space for headers or logos!</small>
                 </div>
 
                 <div class="mb-4">
@@ -42,28 +68,54 @@
 <div class="row mt-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">Features & Examples</h4>
+            <div class="card-header bg-light">
+                <h4 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Features, Examples & Tips</h4>
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6">
-                        <h6 class="fw-bold">Key Features:</h6>
+                    <div class="col-md-4">
+                        <h6 class="fw-bold"><i class="bi bi-star text-warning me-1"></i>Key Features:</h6>
                         <ul>
                             <li><strong>Multi-Sheet Export:</strong> Create multiple sheets in one Excel file</li>
-                            <li><strong>Model Linking:</strong> Access related entity fields (e.g., Project.Asset.Name)</li>
-                            <li><strong>Custom Start Row:</strong> Specify which row to start data output</li>
+                            <li><strong>Model Linking:</strong> Access related entity fields automatically</li>
+                            <li><strong>Custom Start Row:</strong> Specify which row to start data output (1-N)</li>
                             <li><strong>Field Selection:</strong> Choose which fields to include per sheet</li>
+                            <li><strong>Auto-Linking:</strong> Relationships resolved automatically via Id fields</li>
                         </ul>
                     </div>
-                    <div class="col-md-6">
-                        <h6 class="fw-bold">Related Entity Examples:</h6>
+                    <div class="col-md-4">
+                        <h6 class="fw-bold"><i class="bi bi-link-45deg text-info me-1"></i>Related Entity Examples:</h6>
                         <ul>
                             <li><code>Asset.Name</code> - Access Asset name from a Project</li>
+                            <li><code>Asset.Location</code> - Access Asset location from a Project</li>
                             <li><code>User.Email</code> - Access User email from a Defect</li>
-                            <li><code>Project.Status</code> - Access Project status from a Defect</li>
-                            <li><code>Asset.Location</code> - Access Asset location from a Measurement</li>
+                            <li><code>Project.Name</code> - Access Project name from a Defect</li>
+                            <li><code>Library.Name</code> - Access Library name from an Asset</li>
                         </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="fw-bold"><i class="bi bi-info-circle text-primary me-1"></i>Usage Tips:</h6>
+                        <ul>
+                            <li>Use <strong>Start Row</strong> to leave space for logos/headers</li>
+                            <li>Related fields are marked with a <span class="badge bg-info">Related</span> badge</li>
+                            <li>Sheet names can be customized or left to default</li>
+                            <li>Add/remove sheets as needed</li>
+                            <li>Select which fields to include in each sheet</li>
+                            <li>Need single sheet? Try <a href="@Url.Action("FieldMapping", "Excel")">Single Sheet Export</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <hr>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6 class="fw-bold"><i class="bi bi-diagram-3 text-success me-1"></i>Example Use Case:</h6>
+                        <p class="mb-2">Create a comprehensive project report with:</p>
+                        <ol>
+                            <li><strong>Sheet 1: "Projects Summary"</strong> - Projects with Asset.Name, Asset.Location (Start Row: 1)</li>
+                            <li><strong>Sheet 2: "Defects Report"</strong> - Defects with Project.Name, Asset.Name, User.Email (Start Row: 3)</li>
+                            <li><strong>Sheet 3: "Measurements"</strong> - Measurements with Project.Name, Asset.Location (Start Row: 1)</li>
+                        </ol>
+                        <p class="text-muted"><small>All sheets in one file, all relationships resolved automatically!</small></p>
                     </div>
                 </div>
             </div>
@@ -72,15 +124,18 @@
 </div>
 
 <template id="sheetConfigTemplate">
-    <div class="card mb-3 sheet-config" data-sheet-index="">
-        <div class="card-header bg-light">
+    <div class="card mb-3 sheet-config border-primary" data-sheet-index="">
+        <div class="card-header bg-light border-primary">
             <div class="row align-items-center">
                 <div class="col">
-                    <h5 class="mb-0">Sheet Configuration</h5>
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-earmark-spreadsheet text-primary me-2"></i>
+                        <span class="sheet-title">Sheet Configuration</span>
+                    </h5>
                 </div>
                 <div class="col-auto">
                     <button class="btn btn-sm btn-danger remove-sheet-btn">
-                        <i class="bi bi-trash"></i> Remove
+                        <i class="bi bi-trash"></i> Remove Sheet
                     </button>
                 </div>
             </div>
@@ -88,31 +143,44 @@
         <div class="card-body">
             <div class="row mb-3">
                 <div class="col-md-3">
-                    <label class="form-label fw-bold">Sheet Name</label>
-                    <input type="text" class="form-control sheet-name" placeholder="e.g., Projects">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-tag me-1"></i>Sheet Name
+                    </label>
+                    <input type="text" class="form-control sheet-name" placeholder="e.g., Projects Summary">
+                    <small class="text-muted">Custom name for this sheet</small>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label fw-bold">Entity Type</label>
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-database me-1"></i>Entity Type
+                    </label>
                     <select class="form-select entity-type">
-                        <option value="">-- Select --</option>
+                        <option value="">-- Select Entity --</option>
                         <option value="assets">Assets</option>
-                        <option value="projects">Projects</option>
-                        <option value="defects">Defects</option>
+                        <option value="projects">Projects (Work Orders)</option>
+                        <option value="defects">Defects (Findings)</option>
                         <option value="measurements">Measurements</option>
                         <option value="inspectionmedia">Inspection Media</option>
-                        <option value="checklists">Checklists</option>
+                        <option value="checklists">Checklists (Digital Forms)</option>
                         <option value="users">Users</option>
                         <option value="workspaces">Workspaces</option>
                     </select>
+                    <small class="text-muted">Data source for this sheet</small>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label fw-bold">Start Row</label>
-                    <input type="number" class="form-control start-row" value="1" min="1">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-arrows-vertical me-1"></i>Start Row
+                    </label>
+                    <input type="number" class="form-control start-row" value="1" min="1" max="100">
+                    <small class="text-muted">Where to begin data</small>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label fw-bold">Actions</label>
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-gear me-1"></i>Actions
+                    </label>
                     <div>
-                        <button class="btn btn-primary load-fields-btn w-100">Load Fields</button>
+                        <button class="btn btn-primary load-fields-btn w-100">
+                            <i class="bi bi-download me-2"></i>Load Available Fields
+                        </button>
                     </div>
                 </div>
             </div>
@@ -180,17 +248,44 @@
 
             var sheetElement = $('.sheet-config[data-sheet-index="' + sheetIndex + '"]');
 
+            // Update sheet title dynamically
+            sheetElement.find('.sheet-title').text('Sheet ' + (sheetIndex + 1) + ' Configuration');
+
+            // Remove button handler
             sheetElement.find('.remove-sheet-btn').click(function() {
                 removeSheet(sheetIndex);
             });
 
+            // Load fields button handler
             sheetElement.find('.load-fields-btn').click(function() {
                 loadSheetFields(sheetIndex);
             });
 
+            // Select all checkbox handler
             sheetElement.find('.select-all-fields').change(function() {
                 var checked = $(this).prop('checked');
                 sheetElement.find('.field-checkbox').prop('checked', checked);
+            });
+
+            // Sheet name change handler - update title
+            sheetElement.find('.sheet-name').on('input', function() {
+                var name = $(this).val();
+                if (name) {
+                    sheetElement.find('.sheet-title').text(name);
+                } else {
+                    sheetElement.find('.sheet-title').text('Sheet ' + (sheetIndex + 1) + ' Configuration');
+                }
+            });
+
+            // Entity type change handler - update title hint
+            sheetElement.find('.entity-type').on('change', function() {
+                var entityType = $(this).val();
+                var sheetName = sheetElement.find('.sheet-name').val();
+                if (!sheetName && entityType) {
+                    var defaultName = $(this).find('option:selected').text().split('(')[0].trim();
+                    sheetElement.find('.sheet-name').val(defaultName);
+                    sheetElement.find('.sheet-title').text(defaultName);
+                }
             });
 
             sheets[sheetIndex] = {
