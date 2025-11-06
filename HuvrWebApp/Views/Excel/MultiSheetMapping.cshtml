@@ -1,0 +1,395 @@
+@{
+    ViewData["Title"] = "Multi-Sheet Excel Export";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">Multi-Sheet Excel Export with Model Linking</h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>Instructions:</strong> Configure multiple sheets with different entity types. You can map fields from related entities using dot notation (e.g., "Asset.Name" for a Project's related Asset).
+                </div>
+
+                <div class="mb-4">
+                    <button id="addSheetBtn" class="btn btn-primary btn-lg">
+                        <i class="bi bi-plus-circle me-2"></i>Add Sheet
+                    </button>
+                    <button id="exportAllBtn" class="btn btn-success btn-lg ms-2" style="display:none;">
+                        <i class="bi bi-file-earmark-excel me-2"></i>Export All Sheets
+                    </button>
+                    <button id="clearAllBtn" class="btn btn-danger btn-lg ms-2" style="display:none;">
+                        <i class="bi bi-trash me-2"></i>Clear All
+                    </button>
+                </div>
+
+                <div id="sheetsContainer"></div>
+
+                <div id="loading" class="alert alert-warning mt-4" style="display:none;">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    <span id="loadingText">Processing...</span>
+                </div>
+
+                <div id="error" class="alert alert-danger mt-4" style="display:none;"></div>
+                <div id="success" class="alert alert-success mt-4" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Features & Examples</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold">Key Features:</h6>
+                        <ul>
+                            <li><strong>Multi-Sheet Export:</strong> Create multiple sheets in one Excel file</li>
+                            <li><strong>Model Linking:</strong> Access related entity fields (e.g., Project.Asset.Name)</li>
+                            <li><strong>Custom Start Row:</strong> Specify which row to start data output</li>
+                            <li><strong>Field Selection:</strong> Choose which fields to include per sheet</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold">Related Entity Examples:</h6>
+                        <ul>
+                            <li><code>Asset.Name</code> - Access Asset name from a Project</li>
+                            <li><code>User.Email</code> - Access User email from a Defect</li>
+                            <li><code>Project.Status</code> - Access Project status from a Defect</li>
+                            <li><code>Asset.Location</code> - Access Asset location from a Measurement</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<template id="sheetConfigTemplate">
+    <div class="card mb-3 sheet-config" data-sheet-index="">
+        <div class="card-header bg-light">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0">Sheet Configuration</h5>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-sm btn-danger remove-sheet-btn">
+                        <i class="bi bi-trash"></i> Remove
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Sheet Name</label>
+                    <input type="text" class="form-control sheet-name" placeholder="e.g., Projects">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Entity Type</label>
+                    <select class="form-select entity-type">
+                        <option value="">-- Select --</option>
+                        <option value="assets">Assets</option>
+                        <option value="projects">Projects</option>
+                        <option value="defects">Defects</option>
+                        <option value="measurements">Measurements</option>
+                        <option value="inspectionmedia">Inspection Media</option>
+                        <option value="checklists">Checklists</option>
+                        <option value="users">Users</option>
+                        <option value="workspaces">Workspaces</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Start Row</label>
+                    <input type="number" class="form-control start-row" value="1" min="1">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Actions</label>
+                    <div>
+                        <button class="btn btn-primary load-fields-btn w-100">Load Fields</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mapping-section" style="display:none;">
+                <hr>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Field Mappings</h6>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input select-all-fields" checked>
+                        <label class="form-check-label">Select All</label>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="50">Include</th>
+                                <th>API Field</th>
+                                <th>Excel Column Name</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody class="mapping-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+@section Scripts {
+    <script>
+        var sheets = [];
+        var sheetCounter = 0;
+
+        $(document).ready(function() {
+            $('#addSheetBtn').click(function() {
+                addSheet();
+            });
+
+            $('#exportAllBtn').click(function() {
+                exportMultiSheet();
+            });
+
+            $('#clearAllBtn').click(function() {
+                if (confirm('Are you sure you want to clear all sheets?')) {
+                    sheets = [];
+                    sheetCounter = 0;
+                    $('#sheetsContainer').empty();
+                    updateButtons();
+                }
+            });
+        });
+
+        function addSheet() {
+            var template = document.getElementById('sheetConfigTemplate');
+            var clone = template.content.cloneNode(true);
+            var sheetIndex = sheetCounter++;
+
+            $(clone).find('.sheet-config').attr('data-sheet-index', sheetIndex);
+            $('#sheetsContainer').append(clone);
+
+            var sheetElement = $('.sheet-config[data-sheet-index="' + sheetIndex + '"]');
+
+            sheetElement.find('.remove-sheet-btn').click(function() {
+                removeSheet(sheetIndex);
+            });
+
+            sheetElement.find('.load-fields-btn').click(function() {
+                loadSheetFields(sheetIndex);
+            });
+
+            sheetElement.find('.select-all-fields').change(function() {
+                var checked = $(this).prop('checked');
+                sheetElement.find('.field-checkbox').prop('checked', checked);
+            });
+
+            sheets[sheetIndex] = {
+                index: sheetIndex,
+                availableFields: []
+            };
+
+            updateButtons();
+        }
+
+        function removeSheet(index) {
+            $('.sheet-config[data-sheet-index="' + index + '"]').remove();
+            delete sheets[index];
+            updateButtons();
+        }
+
+        function updateButtons() {
+            var hasSheets = $('.sheet-config').length > 0;
+            $('#exportAllBtn').toggle(hasSheets);
+            $('#clearAllBtn').toggle(hasSheets);
+        }
+
+        function loadSheetFields(sheetIndex) {
+            var sheetElement = $('.sheet-config[data-sheet-index="' + sheetIndex + '"]');
+            var entityType = sheetElement.find('.entity-type').val();
+
+            if (!entityType) {
+                alert('Please select an entity type');
+                return;
+            }
+
+            $('#loading').show();
+            $('#loadingText').text('Loading fields with relationships...');
+            $('#error').hide();
+            $('#success').hide();
+
+            $.ajax({
+                url: '@Url.Action("GetAvailableFieldsWithRelationships", "Excel")',
+                type: 'GET',
+                data: { entityType: entityType },
+                success: function(response) {
+                    $('#loading').hide();
+
+                    if (response.success) {
+                        sheets[sheetIndex].availableFields = response.fields;
+                        renderSheetFieldMappings(sheetIndex, response.fields);
+                        sheetElement.find('.mapping-section').show();
+                    } else {
+                        $('#error').text('Error: ' + response.error).show();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#loading').hide();
+                    $('#error').text('Request failed: ' + error).show();
+                }
+            });
+        }
+
+        function renderSheetFieldMappings(sheetIndex, fields) {
+            var sheetElement = $('.sheet-config[data-sheet-index="' + sheetIndex + '"]');
+            var tbody = sheetElement.find('.mapping-table-body');
+            tbody.empty();
+
+            fields.forEach(function(field) {
+                var row = $('<tr>');
+
+                var checkboxCell = $('<td class="text-center">').append(
+                    $('<input type="checkbox" class="field-checkbox form-check-input">').prop('checked', true)
+                );
+
+                var fieldCell = $('<td>').html('<code>' + field.fieldPath + '</code>');
+
+                var badge = field.isRelated
+                    ? '<span class="badge bg-info ms-2">Related: ' + field.relatedEntity + '</span>'
+                    : '<span class="badge bg-secondary ms-2">Direct</span>';
+                fieldCell.append(badge);
+
+                if (field.description) {
+                    fieldCell.append('<br><small class="text-muted">' + field.description + '</small>');
+                }
+
+                var excelColumnCell = $('<td>').append(
+                    $('<input type="text" class="form-control form-control-sm excel-column">')
+                        .attr('placeholder', field.displayName)
+                        .val(field.displayName)
+                        .data('field-path', field.fieldPath)
+                );
+
+                var typeCell = $('<td>').text(field.isRelated ? 'Related' : 'Direct');
+
+                row.append(checkboxCell, fieldCell, excelColumnCell, typeCell);
+                tbody.append(row);
+            });
+        }
+
+        function exportMultiSheet() {
+            var sheetConfigurations = [];
+
+            $('.sheet-config').each(function() {
+                var sheetElement = $(this);
+                var sheetIndex = sheetElement.data('sheet-index');
+                var sheetName = sheetElement.find('.sheet-name').val() || 'Sheet' + (sheetIndex + 1);
+                var entityType = sheetElement.find('.entity-type').val();
+                var startRow = parseInt(sheetElement.find('.start-row').val()) || 1;
+
+                if (!entityType) {
+                    return; // Skip sheets without entity type
+                }
+
+                var mappings = [];
+                sheetElement.find('.field-checkbox').each(function() {
+                    var checkbox = $(this);
+                    var row = checkbox.closest('tr');
+                    var fieldPath = row.find('.excel-column').data('field-path');
+                    var excelColumn = row.find('.excel-column').val();
+                    var isSelected = checkbox.prop('checked');
+
+                    mappings.push({
+                        ApiField: fieldPath,
+                        ExcelColumn: excelColumn || fieldPath,
+                        IsSelected: isSelected
+                    });
+                });
+
+                if (mappings.length > 0) {
+                    sheetConfigurations.push({
+                        SheetName: sheetName,
+                        EntityType: entityType,
+                        StartRow: startRow,
+                        Mappings: mappings
+                    });
+                }
+            });
+
+            if (sheetConfigurations.length === 0) {
+                alert('Please configure at least one sheet with fields');
+                return;
+            }
+
+            $('#loading').show();
+            $('#loadingText').text('Fetching data and generating multi-sheet Excel file...');
+            $('#error').hide();
+            $('#success').hide();
+
+            $.ajax({
+                url: '@Url.Action("ExportToExcelMultiSheet", "Excel")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    Sheets: sheetConfigurations,
+                    LinkRelatedData: true
+                }),
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function(blob, status, xhr) {
+                    $('#loading').hide();
+
+                    if (blob.type === 'application/json') {
+                        var reader = new FileReader();
+                        reader.onload = function() {
+                            var response = JSON.parse(reader.result);
+                            $('#error').text('Error: ' + response.error).show();
+                        };
+                        reader.readAsText(blob);
+                    } else {
+                        var filename = xhr.getResponseHeader('Content-Disposition');
+                        if (filename) {
+                            filename = filename.split('filename=')[1].replace(/"/g, '');
+                        } else {
+                            filename = 'MultiSheet_Export_' + new Date().toISOString().slice(0,10) + '.xlsx';
+                        }
+
+                        var url = window.URL.createObjectURL(blob);
+                        var a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+
+                        $('#success').text('Multi-sheet Excel file downloaded successfully!').show();
+
+                        setTimeout(function() {
+                            $('#success').fadeOut();
+                        }, 5000);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#loading').hide();
+
+                    if (xhr.responseJSON) {
+                        $('#error').text('Error: ' + xhr.responseJSON.error).show();
+                    } else {
+                        $('#error').text('Export failed: ' + error).show();
+                    }
+                }
+            });
+        }
+    </script>
+}

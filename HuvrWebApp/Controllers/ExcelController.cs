@@ -37,10 +37,30 @@ namespace HuvrWebApp.Controllers
             return View();
         }
 
+        public IActionResult MultiSheetMapping()
+        {
+            var client = GetClientFromSession();
+            if (client == null)
+            {
+                return RedirectToAction("Login", "Auth");
+            }
+
+            return View();
+        }
+
         [HttpGet]
         public IActionResult GetAvailableFields(string entityType)
         {
             var fields = GetFieldsForEntityType(entityType);
+            return Json(new { success = true, fields });
+        }
+
+        [HttpGet]
+        public IActionResult GetAvailableFieldsWithRelationships(string entityType)
+        {
+            // Normalize entity type to match model names (singular, PascalCase)
+            var normalizedEntityType = NormalizeEntityType(entityType);
+            var fields = ModelRelationshipConfiguration.GetAvailableFieldsWithRelationships(normalizedEntityType);
             return Json(new { success = true, fields });
         }
 
@@ -130,6 +150,160 @@ namespace HuvrWebApp.Controllers
             }
         }
 
+        [HttpPost]
+        public async Task<IActionResult> ExportToExcelMultiSheet([FromBody] MultiSheetExportRequest request)
+        {
+            var client = GetClientFromSession();
+            if (client == null)
+            {
+                return Json(new { success = false, error = "Not authenticated" });
+            }
+
+            try
+            {
+                if (request.Sheets == null || !request.Sheets.Any())
+                {
+                    return Json(new { success = false, error = "No sheet configurations provided" });
+                }
+
+                // Create Excel file
+                using var workbook = new XLWorkbook();
+
+                // Fetch all required data upfront if linking is enabled
+                var entityCache = new Dictionary<string, List<JObject>>();
+                if (request.LinkRelatedData)
+                {
+                    // Determine all entity types needed
+                    var allEntityTypes = new HashSet<string>(request.Sheets.Select(s => s.EntityType));
+                    var relatedEntities = Services.RelatedEntityFieldResolver.GetRequiredRelatedEntitiesForSheets(request.Sheets);
+                    foreach (var entities in relatedEntities.Values)
+                    {
+                        allEntityTypes.UnionWith(entities);
+                    }
+
+                    // Fetch all required data
+                    foreach (var entityType in allEntityTypes)
+                    {
+                        var data = await FetchDataForEntityType(client, entityType);
+                        if (data != null && data.Any())
+                        {
+                            entityCache[entityType] = data.Select(d => JObject.FromObject(d)).ToList();
+                        }
+                    }
+                }
+
+                // Create resolver for related entity fields
+                var resolver = Services.RelatedEntityFieldResolver.BuildCache(entityCache);
+
+                // Process each sheet
+                foreach (var sheetConfig in request.Sheets)
+                {
+                    // Fetch data for this sheet (or use from cache)
+                    List<JObject> data;
+                    if (entityCache.ContainsKey(sheetConfig.EntityType))
+                    {
+                        data = entityCache[sheetConfig.EntityType];
+                    }
+                    else
+                    {
+                        var rawData = await FetchDataForEntityType(client, sheetConfig.EntityType);
+                        data = rawData?.Select(d => JObject.FromObject(d)).ToList() ?? new List<JObject>();
+                    }
+
+                    if (!data.Any())
+                    {
+                        continue; // Skip empty sheets
+                    }
+
+                    // Apply filtering if specified
+                    if (!string.IsNullOrEmpty(sheetConfig.FilterByParentId) && !string.IsNullOrEmpty(sheetConfig.FilterByParentType))
+                    {
+                        var relationship = ModelRelationshipConfiguration.GetRelationship(sheetConfig.EntityType, sheetConfig.FilterByParentType);
+                        if (relationship != null)
+                        {
+                            data = data.Where(d =>
+                            {
+                                var value = GetNestedValue(d, relationship.SourceKey)?.ToString();
+                                return value == sheetConfig.FilterByParentId;
+                            }).ToList();
+                        }
+                    }
+
+                    if (!data.Any())
+                    {
+                        continue; // Skip if no data after filtering
+                    }
+
+                    // Create worksheet
+                    var sheetName = string.IsNullOrWhiteSpace(sheetConfig.SheetName)
+                        ? sheetConfig.EntityType
+                        : sheetConfig.SheetName;
+                    var worksheet = workbook.Worksheets.Add(sheetName);
+
+                    // Add headers at the start row
+                    var selectedMappings = sheetConfig.Mappings.Where(m => m.IsSelected).ToList();
+                    var headerRow = Math.Max(1, sheetConfig.StartRow);
+                    for (int i = 0; i < selectedMappings.Count; i++)
+                    {
+                        var mapping = selectedMappings[i];
+                        var columnName = string.IsNullOrWhiteSpace(mapping.ExcelColumn)
+                            ? mapping.ApiField
+                            : mapping.ExcelColumn;
+                        worksheet.Cell(headerRow, i + 1).Value = columnName;
+                        worksheet.Cell(headerRow, i + 1).Style.Font.Bold = true;
+                        worksheet.Cell(headerRow, i + 1).Style.Fill.BackgroundColor = XLColor.LightGray;
+                    }
+
+                    // Add data rows
+                    int row = headerRow + 1;
+                    var normalizedEntityType = NormalizeEntityType(sheetConfig.EntityType);
+                    foreach (var item in data)
+                    {
+                        for (int i = 0; i < selectedMappings.Count; i++)
+                        {
+                            var mapping = selectedMappings[i];
+                            object? value;
+
+                            // Use resolver for related entity fields if linking is enabled
+                            if (request.LinkRelatedData && mapping.ApiField.Contains('.'))
+                            {
+                                value = resolver.ResolveFieldValue(item, mapping.ApiField, normalizedEntityType);
+                            }
+                            else
+                            {
+                                value = GetNestedValue(item, mapping.ApiField);
+                            }
+
+                            worksheet.Cell(row, i + 1).Value = value?.ToString() ?? "";
+                        }
+                        row++;
+                    }
+
+                    // Auto-fit columns
+                    worksheet.Columns().AdjustToContents();
+                }
+
+                if (!workbook.Worksheets.Any())
+                {
+                    return Json(new { success = false, error = "No data available for any sheets" });
+                }
+
+                // Save to memory stream
+                using var stream = new MemoryStream();
+                workbook.SaveAs(stream);
+                stream.Position = 0;
+
+                var fileName = $"MultiSheet_Export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                return File(stream.ToArray(),
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    fileName);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
         private async Task<List<object>> FetchDataForEntityType(HuvrApiClient.HuvrApiClient client, string entityType)
         {
             var result = new List<object>();
@@ -195,6 +369,25 @@ namespace HuvrWebApp.Controllers
             {
                 return null;
             }
+        }
+
+        private string NormalizeEntityType(string entityType)
+        {
+            return entityType.ToLower() switch
+            {
+                "assets" => "Asset",
+                "projects" => "Project",
+                "defects" => "Defect",
+                "measurements" => "Measurement",
+                "inspectionmedia" => "InspectionMedia",
+                "checklists" => "Checklist",
+                "users" => "User",
+                "workspaces" => "Workspace",
+                "libraries" => "Library",
+                "librarymedia" => "LibraryMedia",
+                "defectoverlays" => "DefectOverlay",
+                _ => entityType
+            };
         }
     }
 }
