@@ -40,7 +40,7 @@
                 </div>
 
                 <div class="row mb-4">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label fw-bold">Entity Type</label>
                         <select id="entityType" class="form-select form-select-lg">
                             <option value="">-- Select Entity Type --</option>
@@ -54,9 +54,17 @@
                             <option value="workspaces">Workspaces</option>
                         </select>
                     </div>
-                    <div class="col-md-6 d-flex align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-bookmark me-1"></i>Load Saved Template
+                        </label>
+                        <select id="templateSelector" class="form-select form-select-lg">
+                            <option value="">-- Select Template --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
                         <button id="loadFieldsBtn" class="btn btn-primary btn-lg w-100">
-                            Load Available Fields
+                            <i class="bi bi-download me-2"></i>Load Fields
                         </button>
                     </div>
                 </div>
@@ -98,8 +106,14 @@
                             Export to Excel
                         </button>
                         <button id="resetBtn" class="btn btn-secondary btn-lg px-5 ms-2">
-                            Reset Mappings
+                            <i class="bi bi-arrow-clockwise me-2"></i>Reset
                         </button>
+                        <button id="saveTemplateBtn" class="btn btn-info btn-lg px-5 ms-2">
+                            <i class="bi bi-bookmark-plus me-2"></i>Save as Template
+                        </button>
+                        <a href="@Url.Action("Index", "Template")" class="btn btn-outline-primary btn-lg px-5 ms-2">
+                            <i class="bi bi-folder me-2"></i>Manage Templates
+                        </a>
                     </div>
                 </div>
 
@@ -156,12 +170,43 @@
     </div>
 </div>
 
+<!-- Save Template Modal -->
+<div class="modal fade" id="saveTemplateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-bookmark-plus me-2"></i>Save Export Template</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="templateName" class="form-label fw-bold">Template Name</label>
+                    <input type="text" class="form-control" id="templateName" placeholder="e.g., Project Export with Assets">
+                </div>
+                <div class="mb-3">
+                    <label for="templateDescription" class="form-label fw-bold">Description (Optional)</label>
+                    <textarea class="form-control" id="templateDescription" rows="3" placeholder="Describe what this template is for..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmSaveTemplate">
+                    <i class="bi bi-save me-2"></i>Save Template
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         var availableFields = [];
         var currentEntityType = '';
 
         $(document).ready(function() {
+            // Load templates on page load
+            loadTemplates();
+
             $('#loadFieldsBtn').click(function() {
                 var entityType = $('#entityType').val();
                 if (!entityType) {
@@ -171,6 +216,13 @@
 
                 currentEntityType = entityType;
                 loadFields(entityType);
+            });
+
+            $('#templateSelector').change(function() {
+                var templateId = $(this).val();
+                if (templateId) {
+                    loadTemplateById(templateId);
+                }
             });
 
             $('#selectAll').change(function() {
@@ -185,6 +237,18 @@
                 if (currentEntityType) {
                     loadFields(currentEntityType);
                 }
+            });
+
+            $('#saveTemplateBtn').click(function() {
+                if (!currentEntityType || availableFields.length === 0) {
+                    alert('Please load fields first before saving a template');
+                    return;
+                }
+                $('#saveTemplateModal').modal('show');
+            });
+
+            $('#confirmSaveTemplate').click(function() {
+                saveTemplate();
             });
         });
 
@@ -357,6 +421,198 @@
                     } else {
                         $('#error').text('Export failed: ' + error).show();
                     }
+                }
+            });
+        }
+
+        function loadTemplates() {
+            $.ajax({
+                url: '@Url.Action("GetTemplatesByType", "Template")',
+                type: 'GET',
+                data: { type: 0 }, // 0 = SingleSheet
+                success: function(response) {
+                    if (response.success && response.templates) {
+                        var selector = $('#templateSelector');
+                        selector.empty().append('<option value="">-- Select Template --</option>');
+                        response.templates.forEach(function(template) {
+                            selector.append('<option value="' + template.id + '">' + template.name + '</option>');
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Failed to load templates:', error);
+                }
+            });
+        }
+
+        function loadTemplateById(templateId) {
+            $('#loading').show();
+            $('#loadingText').text('Loading template...');
+            $('#error').hide();
+            $('#success').hide();
+
+            $.ajax({
+                url: '@Url.Action("GetTemplate", "Template")',
+                type: 'GET',
+                data: { id: templateId },
+                success: function(response) {
+                    $('#loading').hide();
+
+                    if (response.success && response.template && response.template.singleSheetConfig) {
+                        var config = response.template.singleSheetConfig;
+
+                        // Set entity type
+                        $('#entityType').val(config.entityType);
+                        currentEntityType = config.entityType;
+
+                        // Load fields and apply the mappings from template
+                        $.ajax({
+                            url: '@Url.Action("GetAvailableFieldsWithRelationships", "Excel")',
+                            type: 'GET',
+                            data: { entityType: config.entityType },
+                            success: function(fieldResponse) {
+                                if (fieldResponse.success) {
+                                    availableFields = fieldResponse.fields;
+
+                                    // Render with template mappings
+                                    renderFieldMappingsFromTemplate(fieldResponse.fields, config.mappings);
+                                    $('#mappingSection').show();
+
+                                    $('#success').html('<i class="bi bi-check-circle me-2"></i>Template loaded: <strong>' + response.template.name + '</strong>').show();
+                                    setTimeout(function() {
+                                        $('#success').fadeOut();
+                                    }, 3000);
+                                }
+                            }
+                        });
+                    } else {
+                        $('#error').text('Error: Invalid template').show();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#loading').hide();
+                    $('#error').text('Failed to load template: ' + error).show();
+                }
+            });
+        }
+
+        function renderFieldMappingsFromTemplate(fields, templateMappings) {
+            var tbody = $('#mappingTableBody');
+            tbody.empty();
+
+            // Create a map of template mappings for quick lookup
+            var mappingMap = {};
+            templateMappings.forEach(function(m) {
+                mappingMap[m.apiField] = m;
+            });
+
+            fields.forEach(function(field) {
+                var row = $('<tr>');
+                var fieldPath = field.fieldPath || field;
+                var isRelated = field.isRelated || false;
+                var relatedEntity = field.relatedEntity || '';
+                var description = field.description || '';
+
+                // Check if this field has a template mapping
+                var templateMapping = mappingMap[fieldPath];
+                var isSelected = templateMapping ? templateMapping.isSelected : true;
+                var excelColumnValue = templateMapping ? templateMapping.excelColumn : field.displayName || fieldPath;
+
+                // Checkbox cell
+                var checkboxCell = $('<td class="text-center">').append(
+                    $('<input type="checkbox" class="field-checkbox form-check-input">')
+                        .prop('checked', isSelected)
+                        .data('field-path', fieldPath)
+                );
+
+                // Field cell with badge
+                var fieldCell = $('<td>').html('<code>' + fieldPath + '</code>');
+                if (isRelated) {
+                    fieldCell.append(' <span class="badge bg-info">Related: ' + relatedEntity + '</span>');
+                } else {
+                    fieldCell.append(' <span class="badge bg-secondary">Direct</span>');
+                }
+                if (description) {
+                    fieldCell.append('<br><small class="text-muted">' + description + '</small>');
+                }
+
+                // Excel column cell
+                var excelColumnCell = $('<td>').append(
+                    $('<input type="text" class="form-control excel-column">')
+                        .attr('placeholder', field.displayName || fieldPath)
+                        .data('field-path', fieldPath)
+                        .val(excelColumnValue)
+                );
+
+                // Type cell
+                var typeCell = $('<td>');
+                if (isRelated) {
+                    typeCell.html('<i class="bi bi-link-45deg text-info"></i> Related');
+                } else {
+                    typeCell.html('<i class="bi bi-check-circle text-success"></i> Direct');
+                }
+
+                row.append(checkboxCell, fieldCell, excelColumnCell, typeCell);
+                tbody.append(row);
+            });
+        }
+
+        function saveTemplate() {
+            var templateName = $('#templateName').val().trim();
+            if (!templateName) {
+                alert('Please enter a template name');
+                return;
+            }
+
+            var mappings = [];
+            $('.field-checkbox').each(function() {
+                var checkbox = $(this);
+                var fieldPath = checkbox.data('field-path');
+                var excelColumn = $('.excel-column[data-field-path="' + fieldPath + '"]').val() || fieldPath;
+                var isSelected = checkbox.prop('checked');
+
+                mappings.push({
+                    ApiField: fieldPath,
+                    ExcelColumn: excelColumn,
+                    IsSelected: isSelected
+                });
+            });
+
+            var templateData = {
+                Name: templateName,
+                Description: $('#templateDescription').val().trim(),
+                Type: 0, // SingleSheet
+                SingleSheetConfig: {
+                    EntityType: currentEntityType,
+                    Mappings: mappings
+                }
+            };
+
+            $.ajax({
+                url: '@Url.Action("SaveTemplate", "Template")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(templateData),
+                success: function(response) {
+                    if (response.success) {
+                        $('#saveTemplateModal').modal('hide');
+                        $('#templateName').val('');
+                        $('#templateDescription').val('');
+
+                        $('#success').html('<i class="bi bi-check-circle me-2"></i>Template saved successfully: <strong>' + templateName + '</strong>').show();
+
+                        // Reload templates
+                        loadTemplates();
+
+                        setTimeout(function() {
+                            $('#success').fadeOut();
+                        }, 3000);
+                    } else {
+                        alert('Error saving template: ' + response.error);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('Failed to save template: ' + error);
                 }
             });
         }

@@ -10,10 +10,12 @@ namespace HuvrWebApp.Controllers
     public class ExcelController : Controller
     {
         private readonly IHuvrService _huvrService;
+        private readonly ExportTemplateService _templateService;
 
-        public ExcelController(IHuvrService huvrService)
+        public ExcelController(IHuvrService huvrService, ExportTemplateService templateService)
         {
             _huvrService = huvrService;
+            _templateService = templateService;
         }
 
         private HuvrApiClient.HuvrApiClient? GetClientFromSession()
@@ -339,6 +341,42 @@ namespace HuvrWebApp.Controllers
                 return File(stream.ToArray(),
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     fileName);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ExportFromTemplate(string templateId)
+        {
+            var client = GetClientFromSession();
+            if (client == null)
+            {
+                return Json(new { success = false, error = "Not authenticated" });
+            }
+
+            try
+            {
+                // Load the template
+                var template = await _templateService.GetTemplateByIdAsync(templateId);
+                if (template == null)
+                {
+                    return Json(new { success = false, error = "Template not found" });
+                }
+
+                // Export based on template type
+                if (template.Type == ExportTemplateType.SingleSheet && template.SingleSheetConfig != null)
+                {
+                    return await ExportToExcel(template.SingleSheetConfig);
+                }
+                else if (template.Type == ExportTemplateType.MultiSheet && template.MultiSheetConfig != null)
+                {
+                    return await ExportToExcelMultiSheet(template.MultiSheetConfig);
+                }
+
+                return Json(new { success = false, error = "Invalid template configuration" });
             }
             catch (Exception ex)
             {

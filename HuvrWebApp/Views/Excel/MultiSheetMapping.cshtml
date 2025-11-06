@@ -39,16 +39,32 @@
                     <br><small class="mt-2 d-block"><strong>Tip:</strong> Configure starting rows per sheet to leave space for headers or logos!</small>
                 </div>
 
-                <div class="mb-4">
-                    <button id="addSheetBtn" class="btn btn-primary btn-lg">
-                        <i class="bi bi-plus-circle me-2"></i>Add Sheet
-                    </button>
-                    <button id="exportAllBtn" class="btn btn-success btn-lg ms-2" style="display:none;">
-                        <i class="bi bi-file-earmark-excel me-2"></i>Export All Sheets
-                    </button>
-                    <button id="clearAllBtn" class="btn btn-danger btn-lg ms-2" style="display:none;">
-                        <i class="bi bi-trash me-2"></i>Clear All
-                    </button>
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-bookmark me-1"></i>Load Saved Template
+                        </label>
+                        <select id="multiSheetTemplateSelector" class="form-select form-select-lg">
+                            <option value="">-- Select Template --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-8 d-flex align-items-end">
+                        <button id="addSheetBtn" class="btn btn-primary btn-lg">
+                            <i class="bi bi-plus-circle me-2"></i>Add Sheet
+                        </button>
+                        <button id="exportAllBtn" class="btn btn-success btn-lg ms-2" style="display:none;">
+                            <i class="bi bi-file-earmark-excel me-2"></i>Export All Sheets
+                        </button>
+                        <button id="saveMultiSheetTemplateBtn" class="btn btn-info btn-lg ms-2" style="display:none;">
+                            <i class="bi bi-bookmark-plus me-2"></i>Save as Template
+                        </button>
+                        <button id="clearAllBtn" class="btn btn-danger btn-lg ms-2" style="display:none;">
+                            <i class="bi bi-trash me-2"></i>Clear All
+                        </button>
+                        <a href="@Url.Action("Index", "Template")" class="btn btn-outline-primary btn-lg ms-2">
+                            <i class="bi bi-folder me-2"></i>Manage
+                        </a>
+                    </div>
                 </div>
 
                 <div id="sheetsContainer"></div>
@@ -214,12 +230,43 @@
     </div>
 </template>
 
+<!-- Save Multi-Sheet Template Modal -->
+<div class="modal fade" id="saveMultiSheetTemplateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-bookmark-plus me-2"></i>Save Multi-Sheet Export Template</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="multiSheetTemplateName" class="form-label fw-bold">Template Name</label>
+                    <input type="text" class="form-control" id="multiSheetTemplateName" placeholder="e.g., Comprehensive Project Report">
+                </div>
+                <div class="mb-3">
+                    <label for="multiSheetTemplateDescription" class="form-label fw-bold">Description (Optional)</label>
+                    <textarea class="form-control" id="multiSheetTemplateDescription" rows="3" placeholder="Describe what this template exports..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmSaveMultiSheetTemplate">
+                    <i class="bi bi-save me-2"></i>Save Template
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         var sheets = [];
         var sheetCounter = 0;
 
         $(document).ready(function() {
+            // Load templates on page load
+            loadMultiSheetTemplates();
+
             $('#addSheetBtn').click(function() {
                 addSheet();
             });
@@ -235,6 +282,25 @@
                     $('#sheetsContainer').empty();
                     updateButtons();
                 }
+            });
+
+            $('#multiSheetTemplateSelector').change(function() {
+                var templateId = $(this).val();
+                if (templateId) {
+                    loadMultiSheetTemplate(templateId);
+                }
+            });
+
+            $('#saveMultiSheetTemplateBtn').click(function() {
+                if ($('.sheet-config').length === 0) {
+                    alert('Please add at least one sheet before saving a template');
+                    return;
+                }
+                $('#saveMultiSheetTemplateModal').modal('show');
+            });
+
+            $('#confirmSaveMultiSheetTemplate').click(function() {
+                saveMultiSheetTemplate();
             });
         });
 
@@ -305,6 +371,7 @@
         function updateButtons() {
             var hasSheets = $('.sheet-config').length > 0;
             $('#exportAllBtn').toggle(hasSheets);
+            $('#saveMultiSheetTemplateBtn').toggle(hasSheets);
             $('#clearAllBtn').toggle(hasSheets);
         }
 
@@ -483,6 +550,244 @@
                     } else {
                         $('#error').text('Export failed: ' + error).show();
                     }
+                }
+            });
+        }
+
+        function loadMultiSheetTemplates() {
+            $.ajax({
+                url: '@Url.Action("GetTemplatesByType", "Template")',
+                type: 'GET',
+                data: { type: 1 }, // 1 = MultiSheet
+                success: function(response) {
+                    if (response.success && response.templates) {
+                        var selector = $('#multiSheetTemplateSelector');
+                        selector.empty().append('<option value="">-- Select Template --</option>');
+                        response.templates.forEach(function(template) {
+                            selector.append('<option value="' + template.id + '">' + template.name + '</option>');
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Failed to load templates:', error);
+                }
+            });
+        }
+
+        function loadMultiSheetTemplate(templateId) {
+            $('#loading').show();
+            $('#loadingText').text('Loading template...');
+
+            $.ajax({
+                url: '@Url.Action("GetTemplate", "Template")',
+                type: 'GET',
+                data: { id: templateId },
+                success: function(response) {
+                    $('#loading').hide();
+
+                    if (response.success && response.template && response.template.multiSheetConfig) {
+                        // Clear existing sheets
+                        sheets = [];
+                        sheetCounter = 0;
+                        $('#sheetsContainer').empty();
+
+                        // Load each sheet from template
+                        response.template.multiSheetConfig.sheets.forEach(function(sheetConfig) {
+                            addSheetFromTemplate(sheetConfig);
+                        });
+
+                        updateButtons();
+
+                        $('#success').html('<i class="bi bi-check-circle me-2"></i>Template loaded: <strong>' + response.template.name + '</strong>').show();
+                        setTimeout(function() {
+                            $('#success').fadeOut();
+                        }, 3000);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#loading').hide();
+                    $('#error').text('Failed to load template: ' + error).show();
+                }
+            });
+        }
+
+        function addSheetFromTemplate(sheetConfig) {
+            var template = document.getElementById('sheetConfigTemplate');
+            var clone = template.content.cloneNode(true);
+            var sheetIndex = sheetCounter++;
+
+            $(clone).find('.sheet-config').attr('data-sheet-index', sheetIndex);
+            $('#sheetsContainer').append(clone);
+
+            var sheetElement = $('.sheet-config[data-sheet-index="' + sheetIndex + '"]');
+
+            // Set values from template
+            sheetElement.find('.sheet-name').val(sheetConfig.sheetName);
+            sheetElement.find('.entity-type').val(sheetConfig.entityType);
+            sheetElement.find('.start-row').val(sheetConfig.startRow);
+            sheetElement.find('.sheet-title').text(sheetConfig.sheetName || ('Sheet ' + (sheetIndex + 1)));
+
+            // Setup handlers
+            sheetElement.find('.remove-sheet-btn').click(function() {
+                removeSheet(sheetIndex);
+            });
+
+            sheetElement.find('.load-fields-btn').click(function() {
+                loadSheetFields(sheetIndex);
+            });
+
+            sheetElement.find('.select-all-fields').change(function() {
+                var checked = $(this).prop('checked');
+                sheetElement.find('.field-checkbox').prop('checked', checked);
+            });
+
+            // Load fields with template mappings
+            $.ajax({
+                url: '@Url.Action("GetAvailableFieldsWithRelationships", "Excel")',
+                type: 'GET',
+                data: { entityType: sheetConfig.entityType },
+                success: function(response) {
+                    if (response.success) {
+                        sheets[sheetIndex] = {
+                            index: sheetIndex,
+                            availableFields: response.fields
+                        };
+                        renderSheetFieldMappingsFromTemplate(sheetIndex, response.fields, sheetConfig.mappings);
+                        sheetElement.find('.mapping-section').show();
+                    }
+                }
+            });
+        }
+
+        function renderSheetFieldMappingsFromTemplate(sheetIndex, fields, templateMappings) {
+            var sheetElement = $('.sheet-config[data-sheet-index="' + sheetIndex + '"]');
+            var tbody = sheetElement.find('.mapping-table-body');
+            tbody.empty();
+
+            var mappingMap = {};
+            templateMappings.forEach(function(m) {
+                mappingMap[m.apiField] = m;
+            });
+
+            fields.forEach(function(field) {
+                var row = $('<tr>');
+                var templateMapping = mappingMap[field.fieldPath];
+                var isSelected = templateMapping ? templateMapping.isSelected : true;
+                var excelColumnValue = templateMapping ? templateMapping.excelColumn : field.displayName;
+
+                var checkboxCell = $('<td class="text-center">').append(
+                    $('<input type="checkbox" class="field-checkbox form-check-input">').prop('checked', isSelected)
+                );
+
+                var fieldCell = $('<td>').html('<code>' + field.fieldPath + '</code>');
+                if (field.isRelated) {
+                    fieldCell.append(' <span class="badge bg-info">Related: ' + field.relatedEntity + '</span>');
+                } else {
+                    fieldCell.append(' <span class="badge bg-secondary">Direct</span>');
+                }
+                if (field.description) {
+                    fieldCell.append('<br><small class="text-muted">' + field.description + '</small>');
+                }
+
+                var excelColumnCell = $('<td>').append(
+                    $('<input type="text" class="form-control form-control-sm excel-column">')
+                        .attr('placeholder', field.displayName)
+                        .val(excelColumnValue)
+                        .data('field-path', field.fieldPath)
+                );
+
+                var typeCell = $('<td>').text(field.isRelated ? 'Related' : 'Direct');
+
+                row.append(checkboxCell, fieldCell, excelColumnCell, typeCell);
+                tbody.append(row);
+            });
+        }
+
+        function saveMultiSheetTemplate() {
+            var templateName = $('#multiSheetTemplateName').val().trim();
+            if (!templateName) {
+                alert('Please enter a template name');
+                return;
+            }
+
+            var sheetConfigurations = [];
+
+            $('.sheet-config').each(function() {
+                var sheetElement = $(this);
+                var sheetIndex = sheetElement.data('sheet-index');
+                var sheetName = sheetElement.find('.sheet-name').val() || 'Sheet' + (sheetIndex + 1);
+                var entityType = sheetElement.find('.entity-type').val();
+                var startRow = parseInt(sheetElement.find('.start-row').val()) || 1;
+
+                if (!entityType) {
+                    return; // Skip sheets without entity type
+                }
+
+                var mappings = [];
+                sheetElement.find('.field-checkbox').each(function() {
+                    var checkbox = $(this);
+                    var row = checkbox.closest('tr');
+                    var fieldPath = row.find('.excel-column').data('field-path');
+                    var excelColumn = row.find('.excel-column').val();
+                    var isSelected = checkbox.prop('checked');
+
+                    mappings.push({
+                        ApiField: fieldPath,
+                        ExcelColumn: excelColumn || fieldPath,
+                        IsSelected: isSelected
+                    });
+                });
+
+                if (mappings.length > 0) {
+                    sheetConfigurations.push({
+                        SheetName: sheetName,
+                        EntityType: entityType,
+                        StartRow: startRow,
+                        Mappings: mappings
+                    });
+                }
+            });
+
+            if (sheetConfigurations.length === 0) {
+                alert('Please configure at least one sheet with fields');
+                return;
+            }
+
+            var templateData = {
+                Name: templateName,
+                Description: $('#multiSheetTemplateDescription').val().trim(),
+                Type: 1, // MultiSheet
+                MultiSheetConfig: {
+                    Sheets: sheetConfigurations,
+                    LinkRelatedData: true
+                }
+            };
+
+            $.ajax({
+                url: '@Url.Action("SaveTemplate", "Template")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(templateData),
+                success: function(response) {
+                    if (response.success) {
+                        $('#saveMultiSheetTemplateModal').modal('hide');
+                        $('#multiSheetTemplateName').val('');
+                        $('#multiSheetTemplateDescription').val('');
+
+                        $('#success').html('<i class="bi bi-check-circle me-2"></i>Template saved successfully: <strong>' + templateName + '</strong>').show();
+
+                        // Reload templates
+                        loadMultiSheetTemplates();
+
+                        setTimeout(function() {
+                            $('#success').fadeOut();
+                        }, 3000);
+                    } else {
+                        alert('Error saving template: ' + response.error);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('Failed to save template: ' + error);
                 }
             });
         }

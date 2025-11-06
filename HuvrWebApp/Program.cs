@@ -12,6 +12,7 @@ builder.Services.AddSession(options =>
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IHuvrService, HuvrService>();
+builder.Services.AddSingleton<ExportTemplateService>();
 
 var app = builder.Build();
 
