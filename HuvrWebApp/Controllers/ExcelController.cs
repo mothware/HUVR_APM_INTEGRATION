@@ -10,10 +10,12 @@ namespace HuvrWebApp.Controllers
     public class ExcelController : Controller
     {
         private readonly IHuvrService _huvrService;
+        private readonly ExportTemplateService _templateService;
 
-        public ExcelController(IHuvrService huvrService)
+        public ExcelController(IHuvrService huvrService, ExportTemplateService templateService)
         {
             _huvrService = huvrService;
+            _templateService = templateService;
         }
 
         private HuvrApiClient.HuvrApiClient? GetClientFromSession()
@@ -91,6 +93,13 @@ namespace HuvrWebApp.Controllers
 
             try
             {
+                // Normalize entity type
+                var normalizedEntityType = NormalizeEntityType(request.EntityType);
+
+                // Determine if we need related entity data
+                var selectedMappings = request.Mappings.Where(m => m.IsSelected).ToList();
+                var hasRelatedFields = selectedMappings.Any(m => m.ApiField.Contains('.'));
+
                 // Fetch data from API
                 var data = await FetchDataForEntityType(client, request.EntityType);
 
@@ -99,12 +108,38 @@ namespace HuvrWebApp.Controllers
                     return Json(new { success = false, error = "No data available" });
                 }
 
+                // Convert to JObjects for processing
+                var jsonData = data.Select(d => JObject.FromObject(d)).ToList();
+
+                // If we have related fields, fetch and cache related entity data
+                Services.RelatedEntityFieldResolver? resolver = null;
+                if (hasRelatedFields)
+                {
+                    var entityCache = new Dictionary<string, List<JObject>>();
+                    entityCache[normalizedEntityType] = jsonData;
+
+                    // Determine which related entities we need
+                    var requiredRelatedEntities = Services.RelatedEntityFieldResolver.GetRequiredRelatedEntities(
+                        normalizedEntityType, selectedMappings);
+
+                    // Fetch all required related entities
+                    foreach (var relatedEntityType in requiredRelatedEntities)
+                    {
+                        var relatedData = await FetchDataForEntityType(client, relatedEntityType);
+                        if (relatedData != null && relatedData.Any())
+                        {
+                            entityCache[relatedEntityType] = relatedData.Select(d => JObject.FromObject(d)).ToList();
+                        }
+                    }
+
+                    resolver = Services.RelatedEntityFieldResolver.BuildCache(entityCache);
+                }
+
                 // Create Excel file
                 using var workbook = new XLWorkbook();
                 var worksheet = workbook.Worksheets.Add(request.EntityType);
 
                 // Add headers
-                var selectedMappings = request.Mappings.Where(m => m.IsSelected).ToList();
                 for (int i = 0; i < selectedMappings.Count; i++)
                 {
                     var mapping = selectedMappings[i];
@@ -118,14 +153,23 @@ namespace HuvrWebApp.Controllers
 
                 // Add data rows
                 int row = 2;
-                foreach (var item in data)
+                foreach (var jsonObject in jsonData)
                 {
-                    var jsonObject = JObject.FromObject(item);
-
                     for (int i = 0; i < selectedMappings.Count; i++)
                     {
                         var mapping = selectedMappings[i];
-                        var value = GetNestedValue(jsonObject, mapping.ApiField);
+                        object? value;
+
+                        // Use resolver for related entity fields
+                        if (hasRelatedFields && mapping.ApiField.Contains('.') && resolver != null)
+                        {
+                            value = resolver.ResolveFieldValue(jsonObject, mapping.ApiField, normalizedEntityType);
+                        }
+                        else
+                        {
+                            value = GetNestedValue(jsonObject, mapping.ApiField);
+                        }
+
                         worksheet.Cell(row, i + 1).Value = value?.ToString() ?? "";
                     }
                     row++;
@@ -297,6 +341,42 @@ namespace HuvrWebApp.Controllers
                 return File(stream.ToArray(),
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     fileName);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ExportFromTemplate(string templateId)
+        {
+            var client = GetClientFromSession();
+            if (client == null)
+            {
+                return Json(new { success = false, error = "Not authenticated" });
+            }
+
+            try
+            {
+                // Load the template
+                var template = await _templateService.GetTemplateByIdAsync(templateId);
+                if (template == null)
+                {
+                    return Json(new { success = false, error = "Template not found" });
+                }
+
+                // Export based on template type
+                if (template.Type == ExportTemplateType.SingleSheet && template.SingleSheetConfig != null)
+                {
+                    return await ExportToExcel(template.SingleSheetConfig);
+                }
+                else if (template.Type == ExportTemplateType.MultiSheet && template.MultiSheetConfig != null)
+                {
+                    return await ExportToExcelMultiSheet(template.MultiSheetConfig);
+                }
+
+                return Json(new { success = false, error = "Invalid template configuration" });
             }
             catch (Exception ex)
             {

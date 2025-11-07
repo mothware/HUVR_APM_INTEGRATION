@@ -1,0 +1,329 @@
+@{
+    ViewData["Title"] = "Manage Export Templates";
+}
+
+<div class="row mb-3">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="@Url.Action("Index", "Home")">Home</a></li>
+                <li class="breadcrumb-item active">Export Templates</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="btn-group" role="group">
+            <a href="@Url.Action("FieldMapping", "Excel")" class="btn btn-outline-primary">
+                <i class="bi bi-file-earmark-excel"></i> Single Sheet Export
+            </a>
+            <a href="@Url.Action("MultiSheetMapping", "Excel")" class="btn btn-outline-primary">
+                <i class="bi bi-files"></i> Multi-Sheet Export
+            </a>
+            <a href="@Url.Action("Index", "Template")" class="btn btn-primary active">
+                <i class="bi bi-folder"></i> Manage Templates
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0"><i class="bi bi-folder me-2"></i>Export Templates</h3>
+                <small>Manage your saved export configurations</small>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong><i class="bi bi-info-circle me-2"></i>About Templates:</strong> Templates save your field mappings and configurations for reuse. Load a template from the export pages or use "Export Now" to generate the Excel file directly.
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="searchBox" placeholder="Search templates...">
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button id="refreshBtn" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div id="templatesContainer" class="row"></div>
+
+                <div id="loading" class="alert alert-warning mt-4" style="display:none;">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    <span id="loadingText">Loading templates...</span>
+                </div>
+
+                <div id="error" class="alert alert-danger mt-4" style="display:none;"></div>
+                <div id="success" class="alert alert-success mt-4" style="display:none;"></div>
+
+                <div id="noTemplates" class="alert alert-secondary mt-4" style="display:none;">
+                    <i class="bi bi-info-circle me-2"></i>No templates found. Create one from the <a href="@Url.Action("FieldMapping", "Excel")">Single Sheet</a> or <a href="@Url.Action("MultiSheetMapping", "Excel")">Multi-Sheet</a> export pages.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var templates = [];
+
+        $(document).ready(function() {
+            loadTemplates();
+
+            $('#refreshBtn').click(function() {
+                loadTemplates();
+            });
+
+            $('#searchBox').on('input', function() {
+                var searchTerm = $(this).val().toLowerCase();
+                filterTemplates(searchTerm);
+            });
+        });
+
+        function loadTemplates() {
+            $('#loading').show();
+            $('#error').hide();
+            $('#success').hide();
+            $('#noTemplates').hide();
+
+            $.ajax({
+                url: '@Url.Action("GetAllTemplates", "Template")',
+                type: 'GET',
+                success: function(response) {
+                    $('#loading').hide();
+
+                    if (response.success) {
+                        templates = response.templates;
+                        renderTemplates(templates);
+
+                        if (templates.length === 0) {
+                            $('#noTemplates').show();
+                        }
+                    } else {
+                        $('#error').text('Error loading templates: ' + response.error).show();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#loading').hide();
+                    $('#error').text('Failed to load templates: ' + error).show();
+                }
+            });
+        }
+
+        function renderTemplates(templatesArray) {
+            var container = $('#templatesContainer');
+            container.empty();
+
+            templatesArray.forEach(function(template) {
+                var typeIcon = template.type === 0 ? 'file-earmark-excel' : 'files';
+                var typeBadge = template.type === 0
+                    ? '<span class="badge bg-primary">Single Sheet</span>'
+                    : '<span class="badge bg-info">Multi-Sheet (' + template.sheetCount + ' sheets)</span>';
+
+                var card = $('<div class="col-md-6 col-lg-4 mb-3">').html(`
+                    <div class="card h-100 template-card" data-template-id="${template.id}">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-${typeIcon} me-2 text-primary"></i>
+                                ${template.name}
+                            </h5>
+                            <p class="card-text text-muted small">${template.description || 'No description'}</p>
+                            <div class="mb-2">
+                                ${typeBadge}
+                                <span class="badge bg-secondary">${template.fieldCount} fields</span>
+                            </div>
+                            <div class="text-muted small">
+                                <i class="bi bi-database me-1"></i>${template.entityTypes}<br>
+                                <i class="bi bi-clock me-1"></i>Updated: ${formatDate(template.updatedAt)}
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <button class="btn btn-success btn-sm export-btn" data-template-id="${template.id}">
+                                <i class="bi bi-download me-1"></i>Export Now
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm duplicate-btn" data-template-id="${template.id}">
+                                <i class="bi bi-copy me-1"></i>Duplicate
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm delete-btn" data-template-id="${template.id}">
+                                <i class="bi bi-trash me-1"></i>Delete
+                            </button>
+                        </div>
+                    </div>
+                `);
+
+                container.append(card);
+            });
+
+            // Attach event handlers
+            $('.export-btn').click(function() {
+                var templateId = $(this).data('template-id');
+                exportFromTemplate(templateId);
+            });
+
+            $('.duplicate-btn').click(function() {
+                var templateId = $(this).data('template-id');
+                duplicateTemplate(templateId);
+            });
+
+            $('.delete-btn').click(function() {
+                var templateId = $(this).data('template-id');
+                deleteTemplate(templateId);
+            });
+        }
+
+        function filterTemplates(searchTerm) {
+            if (!searchTerm) {
+                renderTemplates(templates);
+                return;
+            }
+
+            var filtered = templates.filter(function(t) {
+                return t.name.toLowerCase().includes(searchTerm) ||
+                       (t.description && t.description.toLowerCase().includes(searchTerm)) ||
+                       t.entityTypes.toLowerCase().includes(searchTerm);
+            });
+
+            renderTemplates(filtered);
+
+            if (filtered.length === 0) {
+                $('#templatesContainer').html('<div class="col-12"><div class="alert alert-secondary">No templates match your search.</div></div>');
+            }
+        }
+
+        function exportFromTemplate(templateId) {
+            $('#loading').show();
+            $('#loadingText').text('Generating Excel file from template...');
+            $('#error').hide();
+            $('#success').hide();
+
+            $.ajax({
+                url: '@Url.Action("ExportFromTemplate", "Excel")',
+                type: 'POST',
+                data: { templateId: templateId },
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function(blob, status, xhr) {
+                    $('#loading').hide();
+
+                    if (blob.type === 'application/json') {
+                        var reader = new FileReader();
+                        reader.onload = function() {
+                            var response = JSON.parse(reader.result);
+                            $('#error').text('Error: ' + response.error).show();
+                        };
+                        reader.readAsText(blob);
+                    } else {
+                        var filename = xhr.getResponseHeader('Content-Disposition');
+                        if (filename) {
+                            filename = filename.split('filename=')[1].replace(/"/g, '');
+                        } else {
+                            filename = 'Export_' + new Date().toISOString().slice(0,10) + '.xlsx';
+                        }
+
+                        var url = window.URL.createObjectURL(blob);
+                        var a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+
+                        $('#success').html('<i class="bi bi-check-circle me-2"></i>Excel file exported successfully!').show();
+
+                        setTimeout(function() {
+                            $('#success').fadeOut();
+                        }, 3000);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#loading').hide();
+                    $('#error').text('Export failed: ' + error).show();
+                }
+            });
+        }
+
+        function duplicateTemplate(templateId) {
+            if (!confirm('Create a copy of this template?')) {
+                return;
+            }
+
+            $('#loading').show();
+            $('#loadingText').text('Duplicating template...');
+
+            $.ajax({
+                url: '@Url.Action("DuplicateTemplate", "Template")',
+                type: 'POST',
+                data: { id: templateId },
+                success: function(response) {
+                    $('#loading').hide();
+
+                    if (response.success) {
+                        $('#success').html('<i class="bi bi-check-circle me-2"></i>Template duplicated successfully!').show();
+                        loadTemplates();
+
+                        setTimeout(function() {
+                            $('#success').fadeOut();
+                        }, 3000);
+                    } else {
+                        $('#error').text('Error: ' + response.error).show();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#loading').hide();
+                    $('#error').text('Failed to duplicate template: ' + error).show();
+                }
+            });
+        }
+
+        function deleteTemplate(templateId) {
+            var template = templates.find(t => t.id === templateId);
+            if (!confirm('Are you sure you want to delete "' + template.name + '"? This action cannot be undone.')) {
+                return;
+            }
+
+            $('#loading').show();
+            $('#loadingText').text('Deleting template...');
+
+            $.ajax({
+                url: '@Url.Action("DeleteTemplate", "Template")',
+                type: 'POST',
+                data: { id: templateId },
+                success: function(response) {
+                    $('#loading').hide();
+
+                    if (response.success) {
+                        $('#success').html('<i class="bi bi-check-circle me-2"></i>Template deleted successfully!').show();
+                        loadTemplates();
+
+                        setTimeout(function() {
+                            $('#success').fadeOut();
+                        }, 3000);
+                    } else {
+                        $('#error').text('Error: ' + response.error).show();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#loading').hide();
+                    $('#error').text('Failed to delete template: ' + error).show();
+                }
+            });
+        }
+
+        function formatDate(dateString) {
+            var date = new Date(dateString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+    </script>
+}
