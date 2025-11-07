@@ -105,6 +105,9 @@
                             </svg>
                             Export to Excel
                         </button>
+                        <button id="downloadImagesBtn" class="btn btn-warning btn-lg px-5 ms-2" style="display:none;">
+                            <i class="bi bi-images me-2"></i>Download Images
+                        </button>
                         <button id="resetBtn" class="btn btn-secondary btn-lg px-5 ms-2">
                             <i class="bi bi-arrow-clockwise me-2"></i>Reset
                         </button>
@@ -216,6 +219,13 @@
 
                 currentEntityType = entityType;
                 loadFields(entityType);
+
+                // Show/hide download images button based on entity type
+                if (entityType === 'defects') {
+                    $('#downloadImagesBtn').show();
+                } else {
+                    $('#downloadImagesBtn').hide();
+                }
             });
 
             $('#templateSelector').change(function() {
@@ -249,6 +259,10 @@
 
             $('#confirmSaveTemplate').click(function() {
                 saveTemplate();
+            });
+
+            $('#downloadImagesBtn').click(function() {
+                downloadDefectImages();
             });
         });
 
@@ -613,6 +627,102 @@
                 },
                 error: function(xhr, status, error) {
                     alert('Failed to save template: ' + error);
+                }
+            });
+        }
+
+        function downloadDefectImages() {
+            if (currentEntityType !== 'defects') {
+                alert('This feature is only available for Defects');
+                return;
+            }
+
+            // Show modal to select specific defect or download all
+            var defectId = prompt('Enter a Defect ID to download its images, or leave blank to download images from all defects:');
+
+            if (defectId === null) {
+                // User cancelled
+                return;
+            }
+
+            if (defectId && defectId.trim() !== '') {
+                // Download images for specific defect
+                downloadSingleDefectImages(defectId.trim());
+            } else {
+                alert('Downloading images for all defects is not yet implemented. Please specify a Defect ID.');
+                // TODO: Implement bulk download for all defects
+                // This would require fetching all defects first, then downloading images for each
+            }
+        }
+
+        function downloadSingleDefectImages(defectId) {
+            $('#loading').show();
+            $('#loadingText').text('Downloading images for defect ' + defectId + '...');
+            $('#error').hide();
+            $('#success').hide();
+
+            $.ajax({
+                url: '@Url.Action("DownloadDefectImages", "Image")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    DefectId: defectId
+                }),
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function(blob, status, xhr) {
+                    $('#loading').hide();
+
+                    // Check if response is JSON (error) or blob (file)
+                    if (blob.type === 'application/json') {
+                        // It's an error response
+                        var reader = new FileReader();
+                        reader.onload = function() {
+                            var response = JSON.parse(reader.result);
+                            $('#error').text('Error: ' + response.error).show();
+                        };
+                        reader.readAsText(blob);
+                    } else {
+                        // It's a file, trigger download
+                        var filename = xhr.getResponseHeader('Content-Disposition');
+                        if (filename) {
+                            filename = filename.split('filename=')[1].replace(/"/g, '');
+                        } else {
+                            filename = 'defect_' + defectId + '_images.zip';
+                        }
+
+                        var url = window.URL.createObjectURL(blob);
+                        var a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+
+                        $('#success').html('<i class="bi bi-check-circle me-2"></i>Images downloaded successfully for defect <strong>' + defectId + '</strong>!').show();
+
+                        setTimeout(function() {
+                            $('#success').fadeOut();
+                        }, 5000);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#loading').hide();
+
+                    if (xhr.responseJSON) {
+                        $('#error').text('Error: ' + xhr.responseJSON.error).show();
+                    } else if (xhr.responseText) {
+                        try {
+                            var errorResponse = JSON.parse(xhr.responseText);
+                            $('#error').text('Error: ' + errorResponse.error).show();
+                        } catch (e) {
+                            $('#error').text('Download failed: ' + error).show();
+                        }
+                    } else {
+                        $('#error').text('Download failed: ' + error).show();
+                    }
                 }
             });
         }

@@ -133,15 +133,22 @@ public class ModelRelationshipConfiguration
         {
             "Asset" => new List<string> { "Id", "Name", "Description", "AssetType", "Location", "Status", "CreatedAt", "UpdatedAt", "ExternalId" },
             "Project" => new List<string> { "Id", "Name", "Description", "AssetId", "ProjectTypeId", "Status", "StartDate", "EndDate", "CreatedAt", "UpdatedAt" },
-            "Defect" => new List<string> { "Id", "ProjectId", "AssetId", "Title", "Description", "Severity", "Status", "DefectType", "Location", "IdentifiedBy", "IdentifiedAt" },
+            "Defect" => new List<string> {
+                "Id", "ProjectId", "ExternalId", "Description", "Severity", "SeverityDisplay",
+                "Type", "TypeDisplay", "SubType", "SubTypeDisplay", "State", "StateNote",
+                "Component", "ComponentDisplay", "LocationZone", "LocationZoneDisplay",
+                "LocationCode", "LocationCodeDisplay", "Access", "AccessDisplay",
+                "Length", "Width", "Area", "Priority", "CapturedOn", "CreatedOn", "UpdatedOn",
+                "RepairBy", "ResolvedOn", "NextInspectionDate"
+            },
             "Measurement" => new List<string> { "Id", "ProjectId", "AssetId", "MeasurementType", "Value", "Unit", "Location", "MeasuredBy", "MeasuredAt" },
-            "InspectionMedia" => new List<string> { "Id", "ProjectId", "FileName", "FileType", "FileSize", "Status", "DownloadUrl", "ThumbnailUrl", "UploadedAt" },
+            "InspectionMedia" => new List<string> { "Id", "ProjectId", "FileName", "FileType", "FileSize", "Status", "DownloadUrl", "ThumbnailUrl", "PreviewUrl", "UploadUrl", "CreatedAt", "UpdatedAt" },
             "Checklist" => new List<string> { "Id", "ProjectId", "Name", "TemplateId", "Status", "CompletedBy", "CompletedAt" },
             "User" => new List<string> { "Id", "Email", "FirstName", "LastName", "Role" },
             "Workspace" => new List<string> { "Id", "Name", "Description" },
             "Library" => new List<string> { "Id", "Name", "Description", "LibraryType" },
             "LibraryMedia" => new List<string> { "Id", "LibraryId", "FileName", "FileType", "FileSize" },
-            "DefectOverlay" => new List<string> { "Id", "DefectId", "MediaId", "CreatedBy", "CreatedAt" },
+            "DefectOverlay" => new List<string> { "Id", "DefectId", "Note", "DisplayUrl", "GeometryExtra", "CreatedOn", "UpdatedOn" },
             _ => new List<string>()
         };
     }
