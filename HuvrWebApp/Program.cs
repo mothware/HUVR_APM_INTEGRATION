@@ -11,8 +11,10 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IHuvrService, HuvrService>();
 builder.Services.AddSingleton<ExportTemplateService>();
+builder.Services.AddScoped<ImageDownloadService>();
 
 var app = builder.Build();
 
