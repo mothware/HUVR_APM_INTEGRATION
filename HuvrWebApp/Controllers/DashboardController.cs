@@ -102,6 +102,9 @@ namespace HuvrWebApp.Controllers
                     case "workspaces":
                         result = await ExecuteWorkspaceMethod(client, method, parameters, filterDict);
                         break;
+                    case "tasks":
+                        result = await ExecuteTaskMethod(client, method, parameters, filterDict);
+                        break;
                     default:
                         return Json(new { success = false, error = "Unknown entity type" });
                 }
@@ -190,6 +193,16 @@ namespace HuvrWebApp.Controllers
             {
                 "list" => await client.ListWorkspacesAsync(filters ?? new Dictionary<string, string>()),
                 "get" => await client.GetWorkspaceAsync(parameters ?? ""),
+                _ => throw new ArgumentException("Unknown method")
+            };
+        }
+
+        private async Task<object?> ExecuteTaskMethod(HuvrApiClient.HuvrApiClient client, string method, string? parameters, Dictionary<string, string>? filters)
+        {
+            return method.ToLower() switch
+            {
+                "list" => await client.GetAllTasksAsync(filters),
+                "get" => await client.GetTaskAsync(parameters ?? ""),
                 _ => throw new ArgumentException("Unknown method")
             };
         }

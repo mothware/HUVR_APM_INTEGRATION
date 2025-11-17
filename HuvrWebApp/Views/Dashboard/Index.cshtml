@@ -14,6 +14,7 @@
                         <label class="form-label fw-bold">Entity Type</label>
                         <select id="entityType" class="form-select">
                             <option value="">-- Select Entity --</option>
+                            <option value="tasks">Tasks</option>
                             <option value="assets">Assets</option>
                             <option value="projects">Projects (Work Orders)</option>
                             <option value="defects">Defects (Findings)</option>
@@ -286,6 +287,40 @@
                                                 <option value="">All</option>
                                                 <option value="true">Active</option>
                                                 <option value="false">Inactive</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tasks Filters -->
+                                <div id="tasksFilters" class="filter-group" style="display:none;">
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Assigned To (User ID)</label>
+                                            <input type="text" class="form-control filter-input" data-filter="assigned_to" placeholder="User ID">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Project ID</label>
+                                            <input type="text" class="form-control filter-input" data-filter="project_id" placeholder="Project ID">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Status</label>
+                                            <select class="form-select filter-input" data-filter="status">
+                                                <option value="">All</option>
+                                                <option value="pending">Pending</option>
+                                                <option value="in_progress">In Progress</option>
+                                                <option value="completed">Completed</option>
+                                                <option value="cancelled">Cancelled</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Priority</label>
+                                            <select class="form-select filter-input" data-filter="priority">
+                                                <option value="">All</option>
+                                                <option value="low">Low</option>
+                                                <option value="medium">Medium</option>
+                                                <option value="high">High</option>
+                                                <option value="urgent">Urgent</option>
                                             </select>
                                         </div>
                                     </div>

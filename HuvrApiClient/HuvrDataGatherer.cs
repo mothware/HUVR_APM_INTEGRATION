@@ -306,5 +306,143 @@ namespace HuvrApiClient
             public int TotalAssets { get; set; }
             public int ActiveUsers { get; set; }
         }
+
+        /// <summary>
+        /// Gathers all data related to a specific task including its project and all project-related data
+        /// </summary>
+        /// <param name="taskId">The task ID to gather data for</param>
+        public async Task<TaskWithProjectData> GatherTaskDataAsync(
+            string taskId,
+            CancellationToken cancellationToken = default)
+        {
+            var taskData = new TaskWithProjectData();
+
+            // Get task details
+            taskData.Task = await _client.GetTaskAsync(taskId, cancellationToken);
+
+            // Get project if task has one
+            if (!string.IsNullOrEmpty(taskData.Task.ProjectId))
+            {
+                try
+                {
+                    taskData.Project = await _client.GetProjectAsync(taskData.Task.ProjectId, cancellationToken);
+
+                    // Get all assets for this project
+                    if (!string.IsNullOrEmpty(taskData.Project.AssetId))
+                    {
+                        var asset = await _client.GetAssetAsync(taskData.Project.AssetId, cancellationToken);
+                        taskData.Assets.Add(asset);
+                    }
+
+                    // Get all findings (defects) for this project
+                    var defectResponse = await _client.ListDefectsAsync(
+                        new Dictionary<string, string> { { "project_id", taskData.Task.ProjectId } },
+                        cancellationToken);
+                    taskData.Findings = defectResponse.Results;
+
+                    // Get all library items for this project
+                    if (taskData.Project.Library != null && !string.IsNullOrEmpty(taskData.Project.Library.Id))
+                    {
+                        var libraryMediaResponse = await _client.ListLibraryMediaAsync(
+                            new Dictionary<string, string> { { "library_id", taskData.Project.Library.Id } },
+                            cancellationToken);
+                        taskData.LibraryItems = libraryMediaResponse.Results;
+                    }
+
+                    // Get all measurements (CMLs) for this project
+                    var measurementResponse = await _client.ListMeasurementsAsync(
+                        new Dictionary<string, string> { { "project_id", taskData.Task.ProjectId } },
+                        cancellationToken);
+                    taskData.Measurements = measurementResponse.Results;
+
+                    // Get all inspection media for this project
+                    var inspectionMediaResponse = await _client.ListInspectionMediaAsync(
+                        new Dictionary<string, string> { { "project_id", taskData.Task.ProjectId } },
+                        cancellationToken);
+                    taskData.InspectionMedia = inspectionMediaResponse.Results;
+                }
+                catch (HttpRequestException)
+                {
+                    // Project might not exist or be accessible
+                    taskData.Project = null;
+                }
+            }
+
+            return taskData;
+        }
+
+        /// <summary>
+        /// Gathers data for multiple tasks in parallel
+        /// </summary>
+        /// <param name="taskIds">List of task IDs</param>
+        /// <param name="maxConcurrency">Maximum number of concurrent requests (default: 5)</param>
+        public async Task<List<TaskWithProjectData>> GatherMultipleTasksDataAsync(
+            List<string> taskIds,
+            int maxConcurrency = 5,
+            CancellationToken cancellationToken = default)
+        {
+            var semaphore = new SemaphoreSlim(maxConcurrency);
+            var tasks = new List<System.Threading.Tasks.Task<TaskWithProjectData>>();
+
+            foreach (var taskId in taskIds)
+            {
+                await semaphore.WaitAsync(cancellationToken);
+
+                var task = System.Threading.Tasks.Task.Run(async () =>
+                {
+                    try
+                    {
+                        return await GatherTaskDataAsync(taskId, cancellationToken);
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                }, cancellationToken);
+
+                tasks.Add(task);
+            }
+
+            return (await System.Threading.Tasks.Task.WhenAll(tasks)).ToList();
+        }
+
+        /// <summary>
+        /// Gathers all tasks assigned to a specific user with all their associated data
+        /// </summary>
+        /// <param name="userId">The user ID to filter tasks by</param>
+        /// <param name="maxTasks">Maximum number of tasks to process</param>
+        public async Task<List<TaskWithProjectData>> GatherTasksForUserAsync(
+            string userId,
+            int? maxTasks = null,
+            CancellationToken cancellationToken = default)
+        {
+            // Get all tasks assigned to the user
+            var tasks = await _client.GetAllTasksAsync(
+                new Dictionary<string, string> { { "assigned_to", userId } },
+                maxTasks,
+                cancellationToken);
+
+            // Gather data for each task
+            var taskIds = tasks.Select(t => t.Id!).ToList();
+            return await GatherMultipleTasksDataAsync(taskIds, 5, cancellationToken);
+        }
+
+        /// <summary>
+        /// Gathers all tasks matching the given criteria with their associated data
+        /// </summary>
+        /// <param name="queryParams">Query parameters to filter tasks</param>
+        /// <param name="maxTasks">Maximum number of tasks to process</param>
+        public async Task<List<TaskWithProjectData>> GatherTasksByFilterAsync(
+            Dictionary<string, string>? queryParams = null,
+            int? maxTasks = null,
+            CancellationToken cancellationToken = default)
+        {
+            // Get all tasks matching the filter
+            var tasks = await _client.GetAllTasksAsync(queryParams, maxTasks, cancellationToken);
+
+            // Gather data for each task
+            var taskIds = tasks.Select(t => t.Id!).ToList();
+            return await GatherMultipleTasksDataAsync(taskIds, 5, cancellationToken);
+        }
     }
 }

@@ -326,6 +326,86 @@ namespace HuvrApiClient
 
         #endregion
 
+        #region Tasks
+
+        /// <summary>
+        /// Lists all tasks with optional filtering
+        /// </summary>
+        /// <param name="queryParams">Optional query parameters (e.g., assigned_to, project_id, status)</param>
+        public async Task<TaskListResponse> ListTasksAsync(
+            Dictionary<string, string>? queryParams = null,
+            CancellationToken cancellationToken = default)
+        {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            var url = BuildUrl("/api/tasks/", queryParams);
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<TaskListResponse>(cancellationToken)
+                ?? new TaskListResponse();
+        }
+
+        /// <summary>
+        /// Gets details for a specific task
+        /// </summary>
+        /// <param name="taskId">The task ID</param>
+        public async Task<Models.Task> GetTaskAsync(string taskId, CancellationToken cancellationToken = default)
+        {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            var response = await _httpClient.GetAsync($"/api/tasks/{taskId}/", cancellationToken);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<Models.Task>(cancellationToken)
+                ?? throw new InvalidOperationException("Task not found");
+        }
+
+        /// <summary>
+        /// Creates a new task
+        /// </summary>
+        /// <param name="task">Task details</param>
+        public async Task<Models.Task> CreateTaskAsync(
+            TaskRequest task,
+            CancellationToken cancellationToken = default)
+        {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            var response = await _httpClient.PostAsJsonAsync("/api/tasks/", task, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<Models.Task>(cancellationToken)
+                ?? throw new InvalidOperationException("Failed to create task");
+        }
+
+        /// <summary>
+        /// Updates a task (partial update using PATCH)
+        /// </summary>
+        /// <param name="taskId">The task ID</param>
+        /// <param name="updates">Fields to update</param>
+        public async Task<Models.Task> UpdateTaskAsync(
+            string taskId,
+            object updates,
+            CancellationToken cancellationToken = default)
+        {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            var content = new StringContent(
+                JsonSerializer.Serialize(updates),
+                Encoding.UTF8,
+                "application/json");
+            var response = await _httpClient.PatchAsync($"/api/tasks/{taskId}/", content, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<Models.Task>(cancellationToken)
+                ?? throw new InvalidOperationException("Failed to update task");
+        }
+
+        /// <summary>
+        /// Deletes a task
+        /// </summary>
+        /// <param name="taskId">The task ID</param>
+        public async Task DeleteTaskAsync(string taskId, CancellationToken cancellationToken = default)
+        {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            var response = await _httpClient.DeleteAsync($"/api/tasks/{taskId}/", cancellationToken);
+            response.EnsureSuccessStatusCode();
+        }
+
+        #endregion
+
         #region Inspection Media
 
         /// <summary>
@@ -1056,6 +1136,37 @@ namespace HuvrApiClient
             }
 
             return allProjects;
+        }
+
+        /// <summary>
+        /// Gets all tasks by automatically handling pagination
+        /// </summary>
+        /// <param name="queryParams">Optional query parameters for filtering</param>
+        /// <param name="maxResults">Maximum number of results to retrieve (default: unlimited)</param>
+        public async Task<List<Models.Task>> GetAllTasksAsync(
+            Dictionary<string, string>? queryParams = null,
+            int? maxResults = null,
+            CancellationToken cancellationToken = default)
+        {
+            var allTasks = new List<Models.Task>();
+            var url = "/api/tasks/";
+
+            while (url != null && (!maxResults.HasValue || allTasks.Count < maxResults.Value))
+            {
+                var response = await GetPagedResultAsync<TaskListResponse>(url, queryParams, cancellationToken);
+                allTasks.AddRange(response.Results);
+
+                if (maxResults.HasValue && allTasks.Count >= maxResults.Value)
+                {
+                    allTasks = allTasks.Take(maxResults.Value).ToList();
+                    break;
+                }
+
+                url = response.Next;
+                queryParams = null;
+            }
+
+            return allTasks;
         }
 
         /// <summary>
