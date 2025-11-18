@@ -11,7 +11,7 @@ namespace HuvrApiClient.Examples
         /// <summary>
         /// Example 1: Basic setup and authentication
         /// </summary>
-        public static async Task BasicSetupExample()
+        public static async System.Threading.Tasks.Task BasicSetupExample()
         {
             // Initialize the client with your credentials
             var client = new HuvrApiClient(
@@ -27,7 +27,7 @@ namespace HuvrApiClient.Examples
         /// <summary>
         /// Example 2: Asset operations
         /// </summary>
-        public static async Task AssetOperationsExample()
+        public static async System.Threading.Tasks.Task AssetOperationsExample()
         {
             using var client = new HuvrApiClient("your-client-id", "your-client-secret");
 
@@ -64,7 +64,7 @@ namespace HuvrApiClient.Examples
         /// <summary>
         /// Example 3: Project (work order) workflow
         /// </summary>
-        public static async Task ProjectWorkflowExample()
+        public static async System.Threading.Tasks.Task ProjectWorkflowExample()
         {
             using var client = new HuvrApiClient("your-client-id", "your-client-secret");
 
@@ -93,7 +93,7 @@ namespace HuvrApiClient.Examples
         /// <summary>
         /// Example 4: Media upload workflow
         /// </summary>
-        public static async Task MediaUploadExample()
+        public static async System.Threading.Tasks.Task MediaUploadExample()
         {
             using var client = new HuvrApiClient("your-client-id", "your-client-secret");
 
@@ -132,7 +132,7 @@ namespace HuvrApiClient.Examples
         /// <summary>
         /// Example 5: Manual two-part media upload with retry logic
         /// </summary>
-        public static async Task ManualMediaUploadWithRetryExample()
+        public static async System.Threading.Tasks.Task ManualMediaUploadWithRetryExample()
         {
             using var client = new HuvrApiClient("your-client-id", "your-client-secret");
 
@@ -171,7 +171,7 @@ namespace HuvrApiClient.Examples
         /// <summary>
         /// Example 6: Checklist operations
         /// </summary>
-        public static async Task ChecklistExample()
+        public static async System.Threading.Tasks.Task ChecklistExample()
         {
             using var client = new HuvrApiClient("your-client-id", "your-client-secret");
 
@@ -209,7 +209,7 @@ namespace HuvrApiClient.Examples
         /// <summary>
         /// Example 7: Defect (findings) management
         /// </summary>
-        public static async Task DefectExample()
+        public static async System.Threading.Tasks.Task DefectExample()
         {
             using var client = new HuvrApiClient("your-client-id", "your-client-secret");
 
@@ -249,7 +249,7 @@ namespace HuvrApiClient.Examples
         /// <summary>
         /// Example 8: Measurement recording
         /// </summary>
-        public static async Task MeasurementExample()
+        public static async System.Threading.Tasks.Task MeasurementExample()
         {
             using var client = new HuvrApiClient("your-client-id", "your-client-secret");
 
@@ -276,7 +276,7 @@ namespace HuvrApiClient.Examples
         /// <summary>
         /// Example 9: Complete inspection workflow
         /// </summary>
-        public static async Task CompleteInspectionWorkflowExample()
+        public static async System.Threading.Tasks.Task CompleteInspectionWorkflowExample()
         {
             using var client = new HuvrApiClient("your-client-id", "your-client-secret");
 
@@ -369,7 +369,7 @@ namespace HuvrApiClient.Examples
         /// <summary>
         /// Example 10: Error handling and token refresh
         /// </summary>
-        public static async Task ErrorHandlingExample()
+        public static async System.Threading.Tasks.Task ErrorHandlingExample()
         {
             using var client = new HuvrApiClient("your-client-id", "your-client-secret");
 

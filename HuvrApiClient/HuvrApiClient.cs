@@ -80,7 +80,7 @@ namespace HuvrApiClient
         /// <summary>
         /// Ensures a valid access token is available, refreshing if necessary
         /// </summary>
-        public async Task EnsureAuthenticatedAsync(CancellationToken cancellationToken = default)
+        public async System.Threading.Tasks.Task EnsureAuthenticatedAsync(CancellationToken cancellationToken = default)
         {
             await _tokenLock.WaitAsync(cancellationToken);
             try
@@ -181,7 +181,7 @@ namespace HuvrApiClient
         /// Deletes an asset
         /// </summary>
         /// <param name="assetId">The asset ID</param>
-        public async Task DeleteAssetAsync(string assetId, CancellationToken cancellationToken = default)
+        public async System.Threading.Tasks.Task DeleteAssetAsync(string assetId, CancellationToken cancellationToken = default)
         {
             await EnsureAuthenticatedAsync(cancellationToken);
             var response = await _httpClient.DeleteAsync($"/api/assets/{assetId}/", cancellationToken);
@@ -317,7 +317,7 @@ namespace HuvrApiClient
         /// Deletes a project
         /// </summary>
         /// <param name="projectId">The project ID</param>
-        public async Task DeleteProjectAsync(string projectId, CancellationToken cancellationToken = default)
+        public async System.Threading.Tasks.Task DeleteProjectAsync(string projectId, CancellationToken cancellationToken = default)
         {
             await EnsureAuthenticatedAsync(cancellationToken);
             var response = await _httpClient.DeleteAsync($"/api/projects/{projectId}/", cancellationToken);
@@ -397,7 +397,7 @@ namespace HuvrApiClient
         /// Deletes a task
         /// </summary>
         /// <param name="taskId">The task ID</param>
-        public async Task DeleteTaskAsync(string taskId, CancellationToken cancellationToken = default)
+        public async System.Threading.Tasks.Task DeleteTaskAsync(string taskId, CancellationToken cancellationToken = default)
         {
             await EnsureAuthenticatedAsync(cancellationToken);
             var response = await _httpClient.DeleteAsync($"/api/tasks/{taskId}/", cancellationToken);
@@ -472,7 +472,7 @@ namespace HuvrApiClient
         /// <param name="uploadUrl">The upload URL from CreateInspectionMediaAsync</param>
         /// <param name="fileContent">File content as byte array</param>
         /// <param name="contentType">Content type (e.g., image/jpeg)</param>
-        public async Task UploadInspectionMediaFileAsync(
+        public async System.Threading.Tasks.Task UploadInspectionMediaFileAsync(
             string uploadUrl,
             byte[] fileContent,
             string contentType = "application/octet-stream",
