@@ -1,4 +1,5 @@
 using HuvrApiClient.Models;
+using Task = System.Threading.Tasks.Task;
 
 namespace HuvrApiClient
 {
@@ -102,7 +103,7 @@ namespace HuvrApiClient
             {
                 await semaphore.WaitAsync(cancellationToken);
 
-                var task = Task.Run(async () =>
+                var task = System.Threading.Tasks.Task.Run(async () =>
                 {
                     try
                     {
@@ -343,8 +344,10 @@ namespace HuvrApiClient
                     // Get all library items for this project
                     if (taskData.Project.Library != null && !string.IsNullOrEmpty(taskData.Project.Library.Id))
                     {
+                        Dictionary<string, string> dictionary = new() { { "library_id", taskData.Project.Library.Id } };
                         var libraryMediaResponse = await _client.ListLibraryMediaAsync(
-                            new Dictionary<string, string> { { "library_id", taskData.Project.Library.Id } },
+                            taskData.Project.Library.Id,
+                            dictionary,
                             cancellationToken);
                         taskData.LibraryItems = libraryMediaResponse.Results;
                     }
