@@ -110,7 +110,7 @@ public class ImageDownloadService
                     if (downloadResult.Success && downloadResult.Content != null)
                     {
                         // Handle duplicate file names
-                        var finalFileName = downloadResult.FileName;
+                        var finalFileName = downloadResult.FileName ?? $"image_{Guid.NewGuid()}.jpg";
                         if (fileNameCounts.ContainsKey(finalFileName))
                         {
                             fileNameCounts[finalFileName]++;

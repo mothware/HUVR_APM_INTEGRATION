@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using HuvrWebApp.Services;
-using Newtonsoft.Json.Linq;
 
 namespace HuvrWebApp.Controllers
 {
@@ -40,40 +39,36 @@ namespace HuvrWebApp.Controllers
             try
             {
                 // Fetch the defect with overlays
-                var defectResponse = await client.GetDefectByIdAsync(request.DefectId);
-                if (defectResponse == null)
+                var defect = await client.GetDefectAsync(request.DefectId);
+                if (defect == null)
                 {
                     return NotFound(new { error = "Defect not found" });
                 }
 
-                var defect = JObject.Parse(defectResponse);
-                var overlays = defect["Overlays"]?.ToObject<List<JObject>>();
-
-                if (overlays == null || overlays.Count == 0)
+                if (defect.Overlays == null || defect.Overlays.Count == 0)
                 {
                     return BadRequest(new { error = "No overlays found for this defect" });
                 }
 
                 // Build list of overlay image info
                 var overlayImageInfos = new List<DefectOverlayImageInfo>();
-                foreach (var overlay in overlays)
+                foreach (var overlay in defect.Overlays)
                 {
                     var overlayInfo = new DefectOverlayImageInfo
                     {
-                        OverlayId = overlay["Id"]?.ToString() ?? "",
-                        DisplayUrl = overlay["DisplayUrl"]?.ToString()
+                        OverlayId = overlay.Id ?? "",
+                        DisplayUrl = overlay.DisplayUrl
                     };
 
-                    var media = overlay["Media"];
-                    if (media != null)
+                    if (overlay.Media != null)
                     {
                         overlayInfo.Media = new MediaInfo
                         {
-                            Id = media["Id"]?.ToString(),
-                            FileName = media["FileName"]?.ToString(),
-                            DownloadUrl = media["DownloadUrl"]?.ToString(),
-                            ThumbnailUrl = media["ThumbnailUrl"]?.ToString(),
-                            PreviewUrl = media["PreviewUrl"]?.ToString()
+                            Id = overlay.Media.Id,
+                            FileName = overlay.Media.FileName,
+                            DownloadUrl = overlay.Media.DownloadUrl,
+                            ThumbnailUrl = overlay.Media.ThumbnailUrl,
+                            PreviewUrl = overlay.Media.PreviewUrl
                         };
                     }
 
