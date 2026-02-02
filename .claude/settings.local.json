@@ -1,9 +1,25 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dotnet build:*)"
+      "Bash(dotnet build)",
+      "Bash(dotnet run)",
+      "Bash(dotnet test)",
+      "Bash(dotnet watch run)",
+      "Bash(dotnet ef migrations:*)",
+      "Bash(git commit -m:*)",
+      "Bash(git push)",
+      "Edit"
     ],
-    "deny": [],
-    "ask": []
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)"
+    ],
+    "ask": [
+      "Bash"
+    ]
+  },
+  "defaultMode": "acceptEdits",
+  "enabledPlugins": {
+    "cc_chrome_devtools_mcp_skill@cc_chrome_devtools_mcp_skill-plugin-marketplace": true
   }
 }
